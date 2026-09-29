@@ -19,32 +19,115 @@ const firebaseConfig = {
   measurementId: "G-3J3QBGZPL4"
 };
 let db=null;
-let unsubscribeAdmin=null;
-let lastAdminUpdate=0;
-let listenerActive=false;
+let unsub=null;
 try{
   firebase.initializeApp(firebaseConfig);
   db=firebase.firestore();
-  console.log("✅ Firebase v6 FINAL - RealTime Fixed for adiimei.online");
-}catch(e){console.error("Firebase init fail", e);}
+  console.log("%c✅ PAKKA HAL v7 - FIREBASE IS BOSS","color:#00ff88;font-size:14px;font-weight:bold");
+}catch(e){console.error(e);}
 
-async function syncToFirebase() {
+function getCurrentEmail(){
+  try{
+    const cur = localStorage.getItem('diamond_current_v4') || localStorage.getItem('diamond_current_v3');
+    if(!cur) return null;
+    const curId = JSON.parse(cur);
+    const users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
+    const u = users.find(x=>x.id===curId || x.email===curId);
+    return u ? u.email : (curId.includes('@') ? curId : null);
+  }catch(e){return null;}
+}
+
+async function forceSyncFromFirebase(email){
+  if(!db || !email) return;
+  try{
+    const doc = await db.collection('users').doc(email).get();
+    if(!doc.exists) { console.log("Firebase doc not exist for", email); return; }
+    const fb = doc.data();
+    console.log(`🔥 Firebase balance for ${email}: Rs ${fb.balance} (kyc ${fb.kycStatus})`);
+    
+    // OVERWRITE localStorage - NO COMPARISON - FIREBASE WINS
+    let users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
+    let idx = users.findIndex(u=>u.email===email);
+    if(idx>=0){
+      users[idx] = {
+        ...users[idx],
+        balance: fb.balance,
+        totalEarned: fb.totalEarned ?? users[idx].totalEarned,
+        totalInvested: fb.totalInvested ?? users[idx].totalInvested,
+        totalDeposit: fb.totalInvested ?? users[idx].totalDeposit,
+        kycStatus: fb.kycStatus ?? users[idx].kycStatus,
+        isActive: fb.isActive ?? users[idx].isActive,
+        referralCode: fb.referralCode ?? users[idx].referralCode,
+        referralsCount: fb.referralsCount ?? users[idx].referralsCount,
+        activeInvests: fb.activeInvests || users[idx].activeInvests
+      };
+      localStorage.setItem('diamond_users_v4', JSON.stringify(users));
+      console.log(`✅ Local updated to Rs ${fb.balance} - reloading...`);
+      return true;
+    }
+  }catch(e){console.error("forceSync error", e);}
+  return false;
+}
+
+function startBossListener(){
   if(!db) return;
-  if(Date.now() - lastAdminUpdate < 20000) {
-    console.log("⏸️ Skip upload - admin changed recently, protecting");
+  const email = getCurrentEmail();
+  if(!email){
+    console.log("⏳ No login yet, waiting for user to login...");
     return;
   }
-  try{
-    const usersRaw = localStorage.getItem('diamond_users_v4') || localStorage.getItem('diamond_users_v3') || '[]';
-    const users = JSON.parse(usersRaw);
-    console.log(`📤 Uploading ${users.length} users to Firebase...`);
-    for(let u of users){
-      if(!u.email) continue;
+  if(unsub){
+    console.log(`👂 Listener already ON for ${email}`);
+    return;
+  }
+  console.log(`%c👂 BOSS LISTENER ON for ${email} - Ab Firebase me jo karoge wahi final hoga!`,"color:#00d2ff;font-weight:bold");
+  
+  unsub = db.collection('users').doc(email).onSnapshot(async (snap)=>{
+    if(!snap.exists) return;
+    const fb = snap.data();
+    let users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
+    let local = users.find(u=>u.email===email);
+    if(!local) return;
+    
+    // Agar same hai to ignore
+    if(local.balance===fb.balance && local.kycStatus===fb.kycStatus) {
+      console.log(`🔄 Firebase check OK - Rs ${fb.balance}`);
+      return;
+    }
+    
+    console.log(`%c⚡⚡ ADMIN NE FIREBASE SE CHANGE KIYA! ${local.balance} -> ${fb.balance}`,"color:yellow;background:#000;font-size:13px;font-weight:bold");
+    
+    // DIRECT OVERWRITE - NO QUESTIONS
+    users = users.map(u=>{
+      if(u.email===email){
+        return {...u, balance: fb.balance, totalEarned: fb.totalEarned ?? u.totalEarned, totalInvested: fb.totalInvested ?? u.totalInvested, totalDeposit: fb.totalInvested ?? u.totalDeposit, kycStatus: fb.kycStatus ?? u.kycStatus, isActive: fb.isActive ?? u.isActive}
+      }
+      return u;
+    });
+    localStorage.setItem('diamond_users_v4', JSON.stringify(users));
+    
+    // Notification
+    const diff = fb.balance - local.balance;
+    const div = document.createElement('div');
+    div.innerHTML = diff>0 ? `💰 <b>Admin ne Rs ${diff} add kiye!</b><br>New: Rs ${fb.balance}` : `💳 Balance updated: Rs ${fb.balance}`;
+    div.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:999999;background:#000;color:#fff;border:2px solid #00d2ff;padding:16px 24px;border-radius:16px;font-size:14px;text-align:center;box-shadow:0 0 30px #00d2ff;';
+    document.body.appendChild(div);
+    setTimeout(()=>{ div.remove(); location.reload(); }, 2000);
+    
+  }, (err)=>{ console.error("Listener error - rules check karo!", err); });
+}
+
+// Upload sirf tab jab user naya banta hai ya invest karta hai - har 5 sec nahi
+async function uploadOnce(){
+  if(!db) return;
+  const users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
+  for(let u of users){
+    if(!u.email) continue;
+    try{
       await db.collection('users').doc(u.email).set({
         id: u.id || '',
+        email: u.email,
         fullName: u.fullName || u.name || 'User',
-        email: u.email || '',
-        password: u.password || '',
         balance: u.balance || 0,
         totalEarned: u.totalEarned || 0,
         totalInvested: u.totalInvested || u.totalDeposit || 0,
@@ -52,131 +135,46 @@ async function syncToFirebase() {
         referredBy: u.referredBy || '',
         referralsCount: u.referralsCount || 0,
         activeInvests: u.activeInvests || [],
-        transactions: u.transactions || [],
         kycStatus: u.kycStatus || 'not_submitted',
         isActive: u.isActive !== false,
         createdAt: u.createdAt || new Date().toISOString(),
         lastSync: firebase.firestore.FieldValue.serverTimestamp()
-      }, {merge: true});
-    }
-    console.log(`✅ Uploaded ${users.length} users`);
-  }catch(err){console.error("Upload error:", err);}
-}
-
-function startRealtimeListener(){
-  if(!db) { console.log("❌ db not ready for listener"); return; }
-  try{
-    const currentRaw = localStorage.getItem('diamond_current_v4') || localStorage.getItem('diamond_current_v3') || 'null';
-    let currentId=null;
-    try{ currentId=JSON.parse(currentRaw);}catch(e){ console.log("No current user ID found:", currentRaw); return; }
-    if(!currentId){ console.log("❌ No logged in user - listener waiting for login..."); return; }
-    
-    const usersRaw = localStorage.getItem('diamond_users_v4') || '[]';
-    let localUsers = JSON.parse(usersRaw);
-    let currentLocalUser = localUsers.find(u => u.id===currentId || u.email===currentId);
-    if(!currentLocalUser){
-      console.log(`❌ Current ID ${currentId} not found in ${localUsers.length} users - waiting...`);
-      console.log("Users emails:", localUsers.map(u=>u.email).slice(0,3));
-      return;
-    }
-    if(!currentLocalUser.email){
-      console.log("❌ Current user has no email");
-      return;
-    }
-
-    if(listenerActive && unsubscribeAdmin){
-      console.log(`👂 Listener already active for ${currentLocalUser.email}`);
-      return;
-    }
-
-    console.log(`👂 RealTime listener STARTING for ${currentLocalUser.email} - Balance Rs ${currentLocalUser.balance}`);
-
-    if(unsubscribeAdmin) unsubscribeAdmin();
-
-    unsubscribeAdmin = db.collection('users').doc(currentLocalUser.email).onSnapshot((doc)=>{
-      if(!doc.exists){ console.log("Doc not exists yet"); return; }
-      const fbData = doc.data();
-      if(!fbData) return;
-
-      const freshUsersRaw = localStorage.getItem('diamond_users_v4') || '[]';
-      let freshLocalUsers = JSON.parse(freshUsersRaw);
-      let freshCurrent = freshLocalUsers.find(u=>u.email===fbData.email);
-      if(!freshCurrent) return;
-
-      if(fbData.balance === freshCurrent.balance && fbData.kycStatus===freshCurrent.kycStatus) {
-        console.log(`🔄 Firebase check - same balance Rs ${fbData.balance}, no update needed`);
-        return;
-      }
-
-      console.log(`⚡⚡⚡ ADMIN CHANGE DETECTED! Local Rs ${freshCurrent.balance} -> Firebase Rs ${fbData.balance}`);
-      lastAdminUpdate = Date.now();
-      listenerActive = true;
-
-      freshLocalUsers = freshLocalUsers.map(u=>{
-        if(u.email===fbData.email){
-          return {
-            ...u,
-            balance: fbData.balance,
-            totalEarned: fbData.totalEarned ?? u.totalEarned,
-            totalInvested: fbData.totalInvested ?? u.totalInvested,
-            totalDeposit: fbData.totalInvested ?? u.totalDeposit,
-            kycStatus: fbData.kycStatus ?? u.kycStatus,
-            isActive: fbData.isActive ?? u.isActive,
-            referralCode: fbData.referralCode ?? u.referralCode,
-            referralsCount: fbData.referralsCount ?? u.referralsCount
-          };
-        }
-        return u;
-      });
-
-      localStorage.setItem('diamond_users_v4', JSON.stringify(freshLocalUsers));
-
-      let diff = fbData.balance - freshCurrent.balance;
-      let toast = document.createElement('div');
-      if(diff>0){
-        toast.textContent = `💰 Admin ne Rs ${diff} add kiye! New Balance: Rs ${fbData.balance}`;
-      } else if(diff<0){
-        toast.textContent = `💳 Balance updated: Rs ${fbData.balance} (Rs ${Math.abs(diff)} cut)`;
-      } else {
-        toast.textContent = `✅ Account updated by Admin - Rs ${fbData.balance}`;
-      }
-      toast.style.cssText = 'position:fixed;bottom:95px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(135deg,#00d2ff,#7b2ff7);color:white;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);';
-      document.body.appendChild(toast);
-      setTimeout(()=>toast.remove(), 5000);
-      setTimeout(()=>location.reload(), 2000);
-    }, (err)=>{
-      console.error("Snapshot error:", err);
-      listenerActive=false;
-    });
-
-    listenerActive=true;
-    console.log("✅ RealTime listener ACTIVE - ab Firebase me change karte hi site pe ayega");
-
-  }catch(err){console.error("Listener start error:", err);}
+      }, {merge:true});
+    }catch(e){}
+  }
+  console.log(`📤 Uploaded ${users.length} users to Firebase (once)`);
 }
 
 window.addEventListener('load', ()=>{
-  setTimeout(syncToFirebase, 1500);
-  setTimeout(startRealtimeListener, 2500);
-  // Retry listener har 3 sec - taake login ke baad pakka start ho
-  setInterval(startRealtimeListener, 3000);
-  setInterval(syncToFirebase, 12000);
+  setTimeout(uploadOnce, 2000);
+  setTimeout(startBossListener, 3000);
+  setInterval(startBossListener, 2000); // Retry har 2 sec
 });
 
-const origSetItem = localStorage.setItem;
+// Jab login ho to listener restart
+const _setItem = localStorage.setItem;
 localStorage.setItem = function(k,v){
-  origSetItem.apply(this, arguments);
-  if(k && k.includes('diamond_current')){
-    console.log("🔑 Login detected - restarting listener...");
-    listenerActive=false;
-    setTimeout(startRealtimeListener, 800);
+  _setItem.apply(this, arguments);
+  if(k.includes('diamond_current')){
+    console.log("🔑 Login changed - restarting BOSS listener");
+    if(unsub){ unsub(); unsub=null; }
+    setTimeout(startBossListener, 1000);
+    // Foran Firebase se balance lo
+    setTimeout(async ()=>{
+      const email = getCurrentEmail();
+      if(email){
+        const ok = await forceSyncFromFirebase(email);
+        if(ok) setTimeout(()=>location.reload(), 1500);
+      }
+    }, 1500);
   }
-  if(k && k.includes('diamond_users') && Date.now() - lastAdminUpdate > 20000){
-    setTimeout(syncToFirebase, 1000);
+  if(k.includes('diamond_users')){
+    // User ne invest/claim kiya to Firebase pe bhejo
+    setTimeout(uploadOnce, 1000);
   }
 };
 
-console.log("🔥 v6 FINAL: RealTime + Auto-Retry Listener + 20s protection");
+console.log("%c🔥 PAKKA HAL v7 LOADED - Firebase = Boss, Local = Slave","color:#ffcc00;font-weight:bold");
 </script>
 </head>
 <body>
