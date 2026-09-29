@@ -597,6 +597,56 @@ function renderApp(){
     <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Total Referrals</span><b style="color:#f59e0b">${currentUser.referralsCount||0}</b></div>
     <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Earnings</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
    </div>
+
+   <!-- YAHAN PER NECHE INFO - Kaise Kaam Karega - User ki demand -->
+   <div class="solar-card" style="border:1px solid rgba(245,158,11,.25);background:linear-gradient(135deg,#1a1e3a,#1e2a1a);margin-top:12px">
+    <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#f59e0b;font-size:14px;margin-bottom:12px">📚 Yahan Neeche Info - Referral Kaise Kaam Karega?</div>
+    
+    <div style="display:grid;gap:10px">
+     
+     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #f59e0b;display:flex;gap:10px">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center;font-weight:800;color:#f59e0b;font-size:13px;flex-shrink:0">1</div>
+      <div><div style="font-weight:700;color:#fff;font-size:12px">Apna Referral Code Share Karo</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">Aapka code <b style="color:#f59e0b">${currentUser.referralCode}</b> ko WhatsApp, Facebook pe share karo. Naya banda aapka code dalke signup karega.</div></div>
+     </div>
+
+     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #f87171;display:flex;gap:10px">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(248,113,113,.15);display:grid;place-items:center;font-weight:800;color:#f87171;font-size:13px;flex-shrink:0">2</div>
+      <div><div style="font-weight:700;color:#fff;font-size:12px">Join Pe Koi Reward Nahi - Sirf Login Se Kuch Nahi</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5"><b style="color:#f87171">Sirf account banane se koi bonus nahi milega.</b> Referral join hoga, aapke Total Referrals +1 hoga lekin earnings 0 rahegi abhi.</div></div>
+     </div>
+
+     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #22c55e;display:flex;gap:10px">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,.15);display:grid;place-items:center;font-weight:800;color:#22c55e;font-size:13px;flex-shrink:0">3</div>
+      <div><div style="font-weight:700;color:#fff;font-size:12px">Deposit Pe 10% Bonus - Jitna Ziada Deposit Utna Faida</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">
+       Jab referral deposit karega tab aapko turant bonus:<br>
+       • <b style="color:#fff">L1 (Direct): 10%</b> • <b>L2: 5%</b> • <b>L3: 2%</b><br>
+       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <span style="padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);font-size:10px;color:#fbbf24">RS 10,000 → RS 1,000</span>
+        <span style="padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);font-size:10px;color:#fbbf24">RS 30,000 → RS 3,000</span>
+        <span style="padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);font-size:10px;color:#86efac">RS 75,000 → RS 7,500</span>
+       </div>
+      </div></div>
+     </div>
+
+     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #60a5fa;display:flex;gap:10px">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(96,165,250,.15);display:grid;place-items:center;font-weight:800;color:#60a5fa;font-size:13px;flex-shrink:0">4</div>
+      <div><div style="font-weight:700;color:#fff;font-size:12px">Rozana Profit Ka Hisa - Jitna Wo Jeety Ga Utna Aapko Bhi</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">
+       Referral jab daily collect karega:<br>
+       • <b style="color:#fff">L1: 10% of profit rozana</b> • L2: 5% • L3: 2%<br>
+       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <span style="padding:4px 8px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.15);font-size:10px;color:#bfdbfe">RS 400/day → Aapko RS 40/day</span>
+        <span style="padding:4px 8px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.15);font-size:10px;color:#bfdbfe">RS 3000/day → Aapko RS 300/day</span>
+       </div>
+       <div style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.45)">5 referrals × RS 40 = RS 200 roz bina kuch kiye!</div>
+      </div></div>
+     </div>
+
+     <div style="background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(34,197,94,.12));border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px;text-align:center">
+      <div style="font-weight:800;color:#fff;font-size:12px">🎯 Final - Kaise Kamaye? Passive Income!</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.6">Code Share Karo → Banda Join (No reward) → Wo Deposit Kare → <b style="color:#22c55e">Aapko 10% turant</b> → Wo Daily Profit Collect Kare → <b style="color:#f59e0b">Aapko 10% roz 15 din tak</b><br><span style="color:#fbbf24">Jitne ziada referrals + jitna ziada unka deposit = utna ziada aapka faida!</span></div>
+     </div>
+
+    </div>
+   </div>
   `;
  }else if(currentPage==='profile'){
   c.innerHTML=`
