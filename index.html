@@ -146,10 +146,58 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 .buy-btn:active{transform:scale(.97)}
 .balance-card{animation:glowPulse 4s ease-in-out infinite}
 
+
+/* --- PROFESSIONAL PURCHASE MODAL - Popup fix --- */
+.pro-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(12px);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;animation:fadeIn .3s}
+.pro-modal-overlay.show{display:flex}
+.pro-modal{width:100%;max-width:380px;background:linear-gradient(135deg,#1a1e3a 0%,#151a33 100%);border:1px solid rgba(245,158,11,.2);border-radius:24px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05) inset;animation:modalIn .4s cubic-bezier(.16,1,.3,1)}
+@keyframes modalIn{from{transform:translateY(30px) scale(.95);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.pro-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.pro-modal-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;font-size:22px;box-shadow:0 6px 20px rgba(245,158,11,.3)}
+.pro-modal-title{font-weight:800;font-size:16px;color:#fff}
+.pro-modal-subtitle{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.pro-modal-body{background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:14px}
+.pro-modal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:12px}
+.pro-modal-row:last-child{border-bottom:none}
+.pro-modal-row span:first-child{color:rgba(255,255,255,.5)}
+.pro-modal-row b{color:#fff}
+.pro-modal-row .highlight{color:#f59e0b;font-weight:800}
+.pro-modal-row .green{color:#22c55e;font-weight:700}
+.pro-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pro-modal-btn{padding:12px;border-radius:12px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
+.pro-modal-btn.cancel{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08)}
+.pro-modal-btn.confirm{background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;box-shadow:0 8px 20px rgba(245,158,11,.25)}
+.pro-modal-btn:hover{transform:translateY(-1px)}
+.pro-modal-btn:active{transform:scale(.97)}
+
 </style>
 </head>
 <body>
+
+<div class="pro-modal-overlay" id="investModal">
+  <div class="pro-modal">
+    <div class="pro-modal-header">
+      <div class="pro-modal-icon">⛽</div>
+      <div><div class="pro-modal-title" id="modalPlanName">PSO Starter</div><div class="pro-modal-subtitle">PSO Shell Official • Secure Investment</div></div>
+    </div>
+    <div class="pro-modal-body">
+      <div class="pro-modal-row"><span>Investment Plan</span><b id="modalPlanFull">PSO Starter • PSO</b></div>
+      <div class="pro-modal-row"><span>Investment Amount</span><b class="highlight" id="modalAmount">RS 3,000</b></div>
+      <div class="pro-modal-row"><span>Daily Profit (4%)</span><b class="green" id="modalDaily">RS 120/day</b></div>
+      <div class="pro-modal-row"><span>Total Return (15 days)</span><b id="modalTotal">RS 1,800</b></div>
+      <div class="pro-modal-row"><span>Duration</span><b>15 days</b></div>
+      <div class="pro-modal-row"><span>Referral Bonus</span><b style="color:#22c55e">Referrer ko 10% = <span id="modalReferral">RS 300</span></b></div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px;text-align:center;line-height:1.5">✅ PSO Shell Official • Secure • Instant activation • Daily 4% profit • After 15 days principal return</div>
+    <div class="pro-modal-actions">
+      <button class="pro-modal-btn cancel" onclick="closeInvestModal()">✕ Cancel</button>
+      <button class="pro-modal-btn confirm" id="modalConfirmBtn" onclick="confirmInvest()">✅ Confirm Invest</button>
+    </div>
+  </div>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
+
 
 <div id="auth" class="auth">
   <div class="glass-card">
@@ -440,7 +488,7 @@ function renderApp(){
      ${active.map(a=>`
       <div style="background:#0d1023;border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
        <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:12px">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">Daily: RS ${a.daily} • Claimed: RS ${a.totalClaimed||0} • ${a.daysCompleted||0}/15 days</div><div style="margin-top:6px;height:5px;background:#1a1a1a;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div></div>
-       <div style="display:flex;flex-direction:column;gap:6px"><button onclick="claimOne('${a.id}')" style="padding:8px 16px;border-radius:999px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;font-weight:800;font-size:11px;border:none;cursor:pointer;animation:glowPulse 2s infinite">💰 DAILY COLLECT • RS ${a.daily}</button><div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
+       <div style="display:flex;flex-direction:column;gap:6px">${(()=>{const st=getClaimStatus(a);return `<button onclick="${st.canClaim?`claimOne('${a.id}')`:`toast('Next claim in ${st.text} - Har 24h me ek baar','err')`}" style="padding:8px 16px;border-radius:999px;background:${st.canClaim?'linear-gradient(90deg,#22c55e,#16a34a)':'linear-gradient(90deg,#374151,#4b5563)'};color:${st.canClaim?'#000':'#9ca3af'};font-weight:800;font-size:11px;border:none;cursor:${st.canClaim?'pointer':'not-allowed'};${st.canClaim?'animation:glowPulse 2s infinite':''}">${st.canClaim?'💰 DAILY COLLECT • RS '+a.daily:'⏳ '+st.text}</button>`;})()}}<div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
       </div>
      `).join('')}
     </div>
@@ -495,7 +543,7 @@ function renderApp(){
    </div>
    ${active.length===0?`<div style="margin-top:20px"><div style="font-size:40px">⛽</div><div style="font-size:16px;margin-top:8px">No Active Petrol Plan<br><span style="font-size:13px;color:rgba(255,255,255,.5)">Go to Home and invest in a PSO/Shell petrol plan to start earning<br>4% daily</span></div></div>`:`
     <div style="display:grid;gap:10px;margin-top:12px">
-     ${active.map(a=>`<div class="solar-card"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:700">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Daily RS ${a.daily} • Total RS ${(a.daily*15).toLocaleString()} • ${a.daysCompleted||0}/15 days</div></div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#34d399">${a.status}</span></div><div style="margin-top:8px;height:6px;background:#0d1023;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">Claimed RS ${a.totalClaimed||0}</span><button onclick="claimOne('${a.id}')" style="padding:6px 14px;border-radius:999px;background:#22c55e;color:#000;font-weight:700;font-size:11px;border:none">CLAIM DAILY</button></div></div>`).join('')}
+     ${active.map(a=>`<div class="solar-card"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:700">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Daily RS ${a.daily} • Total RS ${(a.daily*15).toLocaleString()} • ${a.daysCompleted||0}/15 days</div></div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#34d399">${a.status}</span></div><div style="margin-top:8px;height:6px;background:#0d1023;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">Claimed RS ${a.totalClaimed||0}</span>${(()=>{const st=getClaimStatus(a);return `<button onclick="${st.canClaim?`claimOne('${a.id}')`:`toast('Next claim in ${st.text}','err')`}" style="padding:6px 14px;border-radius:999px;background:${st.canClaim?'#22c55e':'#374151'};color:${st.canClaim?'#000':'#9ca3af'};font-weight:700;font-size:11px;border:none;cursor:${st.canClaim?'pointer':'not-allowed'}">${st.canClaim?'CLAIM DAILY':'⏳ '+st.text}</button>`;})()}</div></div>`).join('')}
     </div>`}
   `;
  }else if(currentPage==='wallet'){
@@ -691,44 +739,103 @@ function renderApp(){
 }
 function calcWd(){const a=Number(document.getElementById('wdAmount')?.value||0);const fee=Math.ceil(a*0.05);const rec=a-fee;const f=document.getElementById('wdFee');const r=document.getElementById('wdReceive');if(f)f.textContent='RS '+fee.toFixed(2);if(r)r.textContent='RS '+rec.toFixed(2);}
 function filterHistory(type,btn){document.querySelectorAll('.history-tab').forEach(b=>{b.style.background='transparent';b.style.color='#f59e0b';b.style.border='1px solid rgba(245,158,11,.3)'});btn.style.background='#f59e0b';btn.style.color='#000';btn.style.border='none';const list=document.getElementById('historyList');const tx=(currentUser.transactions||[]);let filtered=tx;if(type!=='all')filtered=tx.filter(t=>t.type===type||(type==='profit'&&(t.type==='profit'||t.type==='daily'))||(type==='referral'&&t.type==='referral'));if(filtered.length===0){list.innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No ${type} transactions found</div></div>`;}else{list.innerHTML=filtered.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');}}
-async function investPlan(a,n,d){
-  if(isProcessing)return;
-  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance+' - Pehle deposit karo','err');return;}
-  if(!confirm('Invest RS '+a+' in '+n+'? Daily RS '+d+' • PSO/Shell Official • Referrer ko bonus milega'))return;
+// PROFESSIONAL MODAL - No more ugly confirm popup
+let pendingInvest={a:0,n:'',d:0};
+function showInvestModal(a,n,d){
+  pendingInvest={a:a,n:n,d:d};
+  const plan=PLANS.find(p=>p.price===a)||{company:'PSO',total:a*0.6};
+  document.getElementById('modalPlanName').textContent=n;
+  document.getElementById('modalPlanFull').textContent=n+' • '+(plan.company||'PSO');
+  document.getElementById('modalAmount').textContent='RS '+a.toLocaleString();
+  document.getElementById('modalDaily').textContent='RS '+d+'/day';
+  document.getElementById('modalTotal').textContent='RS '+(d*15).toLocaleString()+' (15 days)';
+  document.getElementById('modalReferral').textContent='RS '+Math.floor(a*0.10).toLocaleString();
+  document.getElementById('investModal').classList.add('show');
+}
+function closeInvestModal(){
+  document.getElementById('investModal').classList.remove('show');
+  pendingInvest={a:0,n:'',d:0};
+}
+async function confirmInvest(){
+  const {a,n,d}=pendingInvest;
+  if(!a) return;
+  closeInvestModal();
+  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance.toFixed(2)+' - Pehle deposit karo','err');return;}
   isProcessing=true;
   try{
     const nb=currentUser.balance-a;
     const ni=(currentUser.totalDeposit||0)+a;
     const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';
-    const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now()-60000,totalClaimed:0,daysCompleted:0,status:'active'}];
+    const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now(),totalClaimed:0,daysCompleted:0,status:'active'}];
     const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};
     await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
     currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
-    // REFERRAL: Investment pe bhi bonus - Deposit ka hissa samjho
     distributeDepositBonus(a, currentUser.phone, currentUser.fullName);
     renderApp();
-    toast('Invested RS '+a+' in '+n+' ('+planCompany+') • Referrer ko 10% bonus gaya','ok');
+    toast('✅ Invested RS '+a.toLocaleString()+' in '+n+' ('+planCompany+') • Daily RS '+d+' • Referrer ko 10% bonus gaya','ok');
   }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
 }
+async function investPlan(a,n,d){
+  if(isProcessing)return;
+  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance.toFixed(2)+' - Pehle deposit karo','err');return;}
+  // Professional modal instead of ugly confirm popup
+  showInvestModal(a,n,d);
+}
+
+// FIXED DAILY CLAIM - 24h cooldown, bar-bar claim nahi hoga
 async function claimOne(id){
   if(isProcessing)return;
   const inv=currentUser.activeInvests.find(i=>i.id===id);
   if(!inv)return;
+  // Check 24h cooldown
+  const now=Date.now();
+  const lastClaim=inv.lastClaimDate||0;
+  const cooldown=24*60*60*1000; // 24 hours
+  const diff=now-lastClaim;
+  // Allow first claim if daysCompleted==0 and totalClaimed==0 (just purchased) - no cooldown for first claim after 1 min
+  const isFirstClaim = (inv.daysCompleted||0)==0 && (inv.totalClaimed||0)==0;
+  if(!isFirstClaim && diff < cooldown){
+    const remaining=cooldown-diff;
+    const hrs=Math.floor(remaining/3600000);
+    const mins=Math.floor((remaining%3600000)/60000);
+    const secs=Math.floor((remaining%60000)/1000);
+    toast(`⏳ Already claimed! Next claim in ${hrs}h ${mins}m ${secs}s • Har 24 ghante me ek baar hi claim hota hai`,'err');
+    return;
+  }
+  if((inv.daysCompleted||0)>=15){
+    toast('✅ 15 days completed! Ab principal claim karo - Plan finished','err');
+    return;
+  }
   isProcessing=true;
   try{
     const p=inv.daily||0;
     const nb=currentUser.balance+p;
     const ne=(currentUser.totalEarning||0)+p;
     const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);
-    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+')', date:new Date().toISOString(),status:'approved'};
+    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+') - Day '+(inv.daysCompleted+1)+'/15', date:new Date().toISOString(),status:'approved'};
     await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
     currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
     // REFERRAL: Jitna jeety ga utna hisa referrer ko bhi milega - L1 10%, L2 5%, L3 2% of profit
     distributeProfitBonus(p, currentUser.phone, currentUser.fullName, inv.planName);
     renderApp();
-    toast('Claimed RS '+p+' Daily Petrol Income • Referrer ko '+Math.floor(p*0.10)+' RS bonus gaya','ok');
+    toast('✅ Claimed RS '+p+' Daily Petrol Income • Day '+(inv.daysCompleted+1)+'/15 • Referrer ko '+Math.floor(p*0.10)+' RS bonus gaya • Next claim 24h baad','ok');
   }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
 }
+
+function getClaimStatus(inv){
+  const now=Date.now();
+  const lastClaim=inv.lastClaimDate||0;
+  const cooldown=24*60*60*1000;
+  const diff=now-lastClaim;
+  const isFirstClaim = (inv.daysCompleted||0)==0 && (inv.totalClaimed||0)==0;
+  if(isFirstClaim) return {canClaim:true, text:'CLAIM NOW', remaining:0};
+  if(diff >= cooldown) return {canClaim:true, text:'CLAIM DAILY', remaining:0};
+  const remaining=cooldown-diff;
+  const hrs=Math.floor(remaining/3600000);
+  const mins=Math.floor((remaining%3600000)/60000);
+  return {canClaim:false, text:`${hrs}h ${mins}m`, remaining:remaining};
+}
+
 function submitDeposit(){
   const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;
   if(!a||!n){toast('Fill amount and full legal name','err');return;}
