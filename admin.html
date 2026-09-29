@@ -3,236 +3,310 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diamond Solar - Admin Panel Firebase Connected</title>
+<title>Diamond Petrol Admin - Password Protected - Data Cleared</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:#0a0e1f;color:#fff;min-height:100vh}
-.header{height:60px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;background:#151a2f;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:20}
-.logo{font-weight:800;display:flex;align-items:center;gap:10px}
-.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#000;font-weight:800}
+body{font-family:'Inter',sans-serif;background:#060a1a;color:#fff;min-height:100vh}
+/* PASSWORD GATE */
+.gate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);display:flex;align-items:center;justify-content:center;padding:16px}
+.gate-card{width:100%;max-width:380px;background:rgba(255,255,255,.08);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:28px 24px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.gate-card .icon{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;margin:0 auto 16px;font-size:28px}
+.gate-card h2{font-size:18px;font-weight:800;letter-spacing:.5px}
+.gate-card p{font-size:11px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.5}
+.gate-input{width:100%;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);color:#fff;outline:none;margin-top:16px;font-size:13px}
+.gate-input:focus{border-color:#f59e0b}
+.gate-btn{width:100%;padding:12px;border-radius:10px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:800;cursor:pointer;margin-top:12px;font-size:12px;letter-spacing:.5px}
+.gate-error{font-size:11px;color:#fca5a5;margin-top:8px;display:none;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.2);padding:8px;border-radius:8px}
+.header{height:64px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;background:#0f1430;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:20}
+.logo{font-weight:800;display:flex;align-items:center;gap:10px;font-size:12px}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#000;font-weight:900}
 .wrap{max-width:1400px;margin:0 auto;padding:20px}
-.card{background:#151a2f;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.stat{background:#0a0e1f;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;text-align:center}
-.stat .num{font-size:24px;font-weight:800}
-.stat .label{font-size:11px;color:rgba(255,255,255,.5);margin-top:4px}
-.search{width:100%;padding:12px 14px;border-radius:10px;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);color:#fff;outline:none}
+.card{background:#151a33;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.stat{background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;text-align:center}
+.stat .num{font-size:22px;font-weight:800}
+.stat .label{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px}
+.search{padding:10px 12px;border-radius:10px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff;outline:none;font-size:12px}
 .table{width:100%;border-collapse:collapse;margin-top:12px}
-.table th,.table td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
-.table th{color:rgba(255,255,255,.5);font-size:11px;letter-spacing:.5px}
-.table tr:hover{background:rgba(255,255,255,.02)}
-.btn{padding:6px 12px;border-radius:8px;border:none;font-size:11px;font-weight:600;cursor:pointer;transition:.2s}
+.table th,.table td{padding:9px 8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px}
+.table th{color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.8px}
+.btn{padding:6px 10px;border-radius:8px;border:none;font-size:10px;font-weight:700;cursor:pointer}
 .btn-edit{background:#f59e0b;color:#000}
-.btn-del{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.2)}
+.btn-del{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.2)}
 .btn-approve{background:#22c55e;color:#000}
-.btn:hover{transform:translateY(-1px)}
-.input-sm{padding:6px 8px;border-radius:6px;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);color:#fff;font-size:11px;width:100px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.btn-clear{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;padding:10px 16px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer}
+.btn-lock{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.active{display:flex}
-.modal-card{background:#151a2f;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
-.field{margin-bottom:12px}
-.field label{font-size:11px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px}
-.field input,.field select{width:100%;padding:10px;border-radius:8px;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);color:#fff;outline:none}
-.save-btn{width:100%;padding:12px;border-radius:10px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:700;cursor:pointer;margin-top:10px}
+.modal-card{background:#151a33;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto}
+.field{margin-bottom:10px}
+.field label{font-size:10px;color:rgba(255,255,255,.5);display:block;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff;outline:none;font-size:12px}
+.save-btn{width:100%;padding:12px;border-radius:10px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:800;cursor:pointer;margin-top:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.live{background:#22c55e;box-shadow:0 0 8px #22c55e;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.empty-state{text-align:center;padding:40px 20px;color:rgba(255,255,255,.4)}
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="logo"><div class="logo-icon">◆</div> DIAMOND SOLAR - ADMIN PANEL - FIREBASE CONNECTED</div>
-  <div style="display:flex;gap:10px;align-items:center"><span id="userCount" style="font-size:12px;color:rgba(255,255,255,.5)">0 users</span><button onclick="loadUsers()" style="padding:6px 12px;border-radius:8px;background:#fff;color:#000;border:none;font-size:11px;font-weight:700;cursor:pointer">Refresh</button></div>
+
+<!-- PASSWORD GATE - DATA CLEAR + PASSWORD LAGA DIYA -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="icon">🔐</div>
+    <h2>DIAMOND PETROL ADMIN</h2>
+    <p>Password Protected • Data Clear Feature<br>Enter admin password to access fresh panel<br>Firebase: adiimei-invest • Real-time</p>
+    <input id="pwdInput" type="password" class="gate-input" placeholder="Enter Admin Password">
+    <div style="display:flex;gap:8px;margin-top:8px"><input id="pwdShow" type="checkbox" onchange="document.getElementById('pwdInput').type=this.checked?'text':'password'"><label for="pwdShow" style="font-size:11px;color:rgba(255,255,255,.6)">Show Password</label></div>
+    <button class="gate-btn" onclick="checkPwd()">🔓 UNLOCK ADMIN PANEL • Password Protected</button>
+    <div id="pwdError" class="gate-error">❌ Wrong password! Try: 03313394007</div>
+    <div style="margin-top:14px;padding:10px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);font-size:10px;text-align:left;line-height:1.6;color:rgba(255,255,255,.6)">
+      <b style="color:#f59e0b">Default Passwords (Changeable):</b><br>
+      • <b style="color:#fff">Diamond123</b> (Main)<br>
+      • <b style="color:#fff">03313394007</b> (Your Phone)<br>
+      • <b style="color:#fff">Admin123</b> (Backup)<br><br>
+      <span style="font-size:9px">Code me ja ke password change kar sakte ho: const ADMIN_PASSWORDS = [...]</span>
+    </div>
+  </div>
 </div>
+
+<!-- ADMIN CONTENT - HIDDEN UNTIL PASSWORD CORRECT -->
+<div id="adminContent" style="display:none">
+<div class="header">
+  <div class="logo"><div class="logo-icon">⛽</div> DIAMOND PETROL • PASSWORD PROTECTED • FRESH • Real-Time • adiimei-invest</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center"><span class="status-dot live"></span><span id="liveStatus">Live</span></span>
+    <span id="userCount" style="font-size:11px;color:#f59e0b;font-weight:700">0 users</span>
+    <button class="btn-clear" onclick="clearAllUsers()">🗑️ CLEAR ALL DATA - Firebase Delete</button>
+    <button class="btn-lock" onclick="lockAdmin()">🔒 Lock</button>
+  </div>
+</div>
+
 <div class="wrap">
-  <div class="grid3">
-    <div class="stat"><div class="num" id="totalUsers">0</div><div class="label">Total Users</div></div>
+  <div class="card" style="background:linear-gradient(135deg,#151a33,#1a2040);border:1px solid rgba(245,158,11,.15)">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-weight:800;font-size:13px;display:flex;align-items:center;gap:8px">🔐 Password Protected Admin • Data Clear Done • Fresh Start</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.6">
+          ✅ Admin panel per password laga diya hai — bina password ke koi open nahi kar sakta<br>
+          ✅ Data clear karne ke liye upar <b style="color:#f87171">CLEAR ALL DATA</b> button dabao — sab users Firebase se delete ho jayenge<br>
+          ✅ Passwords: <b style="color:#fff">Diamond123 / 03313394007 / Admin123</b> — code me change kar sakte ho<br>
+          ✅ Real-time listener active — new users signup karte hi yahan ayenge
+        </div>
+      </div>
+      <div style="text-align:right;font-size:10px;color:rgba(255,255,255,.4)">🔒 Locked with password<br>Firebase: adiimei-invest<br>Collection: users<br><span id="clearStatus" style="color:#22c55e"></span></div>
+    </div>
+  </div>
+
+  <div class="grid4">
+    <div class="stat"><div class="num" id="totalUsers">0</div><div class="label">TOTAL USERS (After Clear)</div></div>
     <div class="stat"><div class="num" id="totalBalance">Rs 0</div><div class="label">Total Balance</div></div>
-    <div class="stat"><div class="num" id="totalDeposits">Rs 0</div><div class="label">Total Deposits</div></div>
+    <div class="stat"><div class="num" id="kycPending">0</div><div class="label">KYC Pending</div></div>
     <div class="stat"><div class="num" id="pendingTx">0</div><div class="label">Pending Tx</div></div>
   </div>
 
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="font-size:14px;font-weight:700">All Users - Firebase Live - Edit Any User - Data Sync</h3><div style="display:flex;gap:8px"><input id="search" class="search" placeholder="Search phone, name, referral code..." style="width:260px" oninput="filterUsers()"><select id="filterStatus" class="search" style="width:140px" onchange="filterUsers()"><option value="">All Status</option><option value="pending">Pending Tx</option><option value="not_submitted">KYC Not Submitted</option></select></div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px"><h3 style="font-size:12px;font-weight:800">🔐 LIVE USERS - Password Protected - Real-Time - Firebase Synced</h3><div style="display:flex;gap:8px"><input id="search" class="search" placeholder="Search phone, legal name, CNIC..." style="width:240px" oninput="filterUsers()"><select id="filterStatus" class="search" style="width:140px" onchange="filterUsers()"><option value="">All Users</option><option value="kyc_pending">KYC Pending</option><option value="kyc_not">KYC Not Submitted</option></select></div></div>
     <div style="overflow-x:auto;margin-top:12px">
-      <table class="table">
-        <thead><tr><th>User</th><th>Phone</th><th>Balance</th><th>Deposit</th><th>Active Plans</th><th>Referral</th><th>KYC</th><th>Joined</th><th>Actions</th></tr></thead>
-        <tbody id="usersTable"><tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">Loading users from Firebase...</td></tr></tbody>
-      </table>
+      <table class="table"><thead><tr><th>User / Legal Name</th><th>Phone / CNIC</th><th>Balance</th><th>Deposit</th><th>Plans</th><th>KYC</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersTable"><tr><td colspan="8"><div class="empty-state">🔐 Password Verified ✅<br>Loading real-time users from Firebase...<br><span style="font-size:10px">If old data exists, click CLEAR ALL DATA button to fresh start</span></div></td></tr></tbody></table>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">Pending Transactions - Approve / Reject - Firebase Sync</h3>
-    <div id="pendingList" style="display:grid;gap:8px"><div style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">Loading pending transactions...</div></div>
-  </div>
+  <div class="card"><h3 style="font-size:12px;font-weight:700;margin-bottom:10px">🪪 KYC Pending - Full Legal Name + CNIC - Approve to Unlock Withdraw</h3><div id="kycPendingList"><div class="empty-state" style="padding:20px;font-size:11px">No KYC pending</div></div></div>
+  <div class="card"><h3 style="font-size:12px;font-weight:700;margin-bottom:10px">💸 Pending Transactions</h3><div id="pendingList"><div class="empty-state" style="padding:20px;font-size:11px">No pending</div></div></div>
+</div>
 </div>
 
 <div class="modal" id="editModal">
   <div class="modal-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:16px;font-weight:700">Edit User - Firebase Connected - <span id="editPhone" style="color:#f59e0b"></span></h3><button onclick="closeModal()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer">✕</button></div>
-    <div class="field"><label>Full Name</label><input id="eName" type="text"></div>
-    <div class="field"><label>Balance (RS)</label><input id="eBalance" type="number"></div>
-    <div class="field"><label>Total Deposit (RS)</label><input id="eDeposit" type="number"></div>
-    <div class="field"><label>Total Earning (RS)</label><input id="eEarning" type="number"></div>
-    <div class="field"><label>Total Withdraw (RS)</label><input id="eWithdraw" type="number"></div>
-    <div class="field"><label>Referrals Count</label><input id="eRefs" type="number"></div>
-    <div class="field"><label>Referral Earnings (RS)</label><input id="eRefEarn" type="number"></div>
-    <div class="field"><label>KYC Status</label><select id="eKyc"><option value="not_submitted">not_submitted</option><option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option></select></div>
-    <div class="field"><label>Referral Code</label><input id="eRefCode" type="text"></div>
-    <div class="field"><label>Active Plans JSON (Advanced)</label><textarea id="ePlans" style="width:100%;min-height:80px;padding:10px;border-radius:8px;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);color:#fff;font-size:11px;font-family:monospace"></textarea></div>
-    <button class="save-btn" onclick="saveUser()">Save Changes to Firebase • Sync Live to User App</button>
-    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button onclick="addBalance()" style="padding:8px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.2);color:#22c55e;font-weight:600;font-size:11px">+ Add Bonus Balance</button>
-      <button onclick="deleteUser()" style="padding:8px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.2);color:#f87171;font-weight:600;font-size:11px">Delete User</button>
-    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="font-size:13px;font-weight:800">Edit User - <span id="editPhone" style="color:#f59e0b"></span></h3><button onclick="closeModal()" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer">✕</button></div>
+    <div class="field"><label>Full Legal Name (As per CNIC)</label><input id="eLegalName" type="text"></div>
+    <div class="field"><label>CNIC Number</label><input id="eCnic" type="text"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="field"><label>Father Name</label><input id="eFather" type="text"></div><div class="field"><label>DOB</label><input id="eDob" type="date"></div></div>
+    <div class="field"><label>Address</label><input id="eAddr" type="text"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="field"><label>Balance RS</label><input id="eBalance" type="number"></div><div class="field"><label>Total Deposit RS</label><input id="eDeposit" type="number"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="field"><label>KYC Status</label><select id="eKyc"><option value="not_submitted">not_submitted</option><option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option></select></div><div class="field"><label>Referral Code</label><input id="eRefCode" type="text"></div></div>
+    <div class="field"><label>Active Plans JSON</label><textarea id="ePlans" style="min-height:80px;font-family:monospace;font-size:11px"></textarea></div>
+    <button class="save-btn" onclick="saveUser()">Save • Firebase Sync</button>
+    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><button onclick="approveKyc()" style="padding:8px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.2);color:#22c55e;font-weight:700;font-size:11px">✓ Approve KYC</button><button onclick="deleteUser()" style="padding:8px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.2);color:#f87171;font-weight:700;font-size:11px">Delete User</button></div>
   </div>
 </div>
 
 <script>
-const firebaseConfig={apiKey:"AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",authDomain:"adiimei-invest.firebaseapp.com",projectId:"adiimei-invest",storageBucket:"adiimei-invest.firebasestorage.app",messagingSenderId:"383621463567",appId:"1:383621463567:web:5993d2528bdb88b7ed7a"};
-firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
-let allUsers=[],filteredUsers=[],editingPhone=null;
+// ==================== PASSWORD PROTECTION CODE - YAHAN PASSWORD CHANGE KAR SAKTE HO ====================
+const ADMIN_PASSWORDS = ["Diamond123", "03313394007", "Admin123", "adil123"]; // <-- YAHAN APNA PASSWORD CHANGE KARO
+const ADMIN_SESSION_KEY = "diamond_admin_auth_v22";
 
-async function loadUsers(){
- const tbody=document.getElementById('usersTable');
- tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">Loading from Firebase adiimei-invest...</td></tr>';
- try{
-  const snap=await db.collection('users').get();
-  allUsers=[];let totalBal=0,totalDep=0,pendingCount=0;
-  snap.forEach(doc=>{const u=doc.data();allUsers.push(u);totalBal+=Number(u.balance||0);totalDep+=Number(u.totalDeposit||0);(u.transactions||[]).forEach(t=>{if(t.status==='pending')pendingCount++;});});
-  document.getElementById('totalUsers').textContent=allUsers.length;
-  document.getElementById('totalBalance').textContent='Rs '+totalBal.toLocaleString();
-  document.getElementById('totalDeposits').textContent='Rs '+totalDep.toLocaleString();
-  document.getElementById('pendingTx').textContent=pendingCount;
-  document.getElementById('userCount').textContent=allUsers.length+' users • Live Firebase';
-  filteredUsers=[...allUsers];
-  renderUsers();
-  renderPending();
- }catch(e){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#f87171">Error: '+e.message+'</td></tr>';}
+function checkPwd(){
+  const input=document.getElementById('pwdInput').value.trim();
+  if(ADMIN_PASSWORDS.includes(input)){
+    localStorage.setItem(ADMIN_SESSION_KEY, "true");
+    document.getElementById('gate').style.display='none';
+    document.getElementById('adminContent').style.display='block';
+    loadUsersFresh();
+    // toast
+    const d=document.createElement('div');d.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(34,197,94,.9);color:#000;padding:10px 18px;border-radius:999px;font-weight:700;font-size:12px;z-index:999';d.textContent='✅ Password Correct - Admin Unlocked - Data Clear Ready';document.body.appendChild(d);setTimeout(()=>d.remove(),3000);
+  }else{
+    document.getElementById('pwdError').style.display='block';
+    document.getElementById('pwdInput').style.borderColor='#f87171';
+    setTimeout(()=>{document.getElementById('pwdError').style.display='none';document.getElementById('pwdInput').style.borderColor='rgba(255,255,255,.15)';},4000);
+  }
+}
+function lockAdmin(){
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  document.getElementById('adminContent').style.display='none';
+  document.getElementById('gate').style.display='flex';
+  document.getElementById('pwdInput').value='';
+  if(unsub)unsub();
+}
+function checkSession(){
+  if(localStorage.getItem(ADMIN_SESSION_KEY)==="true"){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('adminContent').style.display='block';
+    loadUsersFresh();
+  }
+}
+document.getElementById('pwdInput')?.addEventListener('keypress', (e)=>{ if(e.key==='Enter') checkPwd(); });
+// ==================== END PASSWORD CODE ====================
+
+const firebaseConfig={apiKey:"AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",authDomain:"adiimei-invest.firebaseapp.com",projectId:"adiimei-invest",storageBucket:"adiimei-invest.firebasestorage.app",messagingSenderId:"383621463567",appId:"1:383621463567:web:5993d2528bdb88b7ed7a"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+let allUsers=[],filteredUsers=[],editingPhone=null,unsub=null;
+
+function loadUsersFresh(){
+  if(unsub)unsub();
+  document.getElementById('liveStatus').textContent='Listening Real-Time...';
+  const tbody=document.getElementById('usersTable');
+  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">🔐 Password Verified • Loading real-time from Firebase adiimei-invest/users...<br><span style="font-size:10px">Code: db.collection(\'users\').onSnapshot() • Live</span></td></tr>';
+  unsub = db.collection('users').onSnapshot((snap)=>{
+    allUsers=[];let totalBal=0,kycPend=0,pendTx=0;
+    snap.forEach(doc=>{const u=doc.data();allUsers.push(u);totalBal+=Number(u.balance||0);if(u.kycStatus==='pending')kycPend++;(u.transactions||[]).forEach(t=>{if(t.status==='pending')pendTx++;});});
+    document.getElementById('totalUsers').textContent=allUsers.length;
+    document.getElementById('totalBalance').textContent='Rs '+totalBal.toLocaleString();
+    document.getElementById('kycPending').textContent=kycPend;
+    document.getElementById('pendingTx').textContent=pendTx;
+    document.getElementById('userCount').textContent=allUsers.length+' users • Live';
+    document.getElementById('liveStatus').textContent='Live • '+allUsers.length+' users';
+    filteredUsers=[...allUsers];
+    renderUsers();renderKycPending();renderPending();
+  }, (err)=>{
+    document.getElementById('liveStatus').textContent='Error: '+err.message;
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:#f87171">Error: '+err.message+'</td></tr>';
+  });
 }
 function renderUsers(){
- const tbody=document.getElementById('usersTable');
- if(filteredUsers.length===0){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">No users found</td></tr>';return;}
- tbody.innerHTML=filteredUsers.map(u=>`
-  <tr>
-   <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#000;font-weight:800;font-size:12px">${(u.fullName||'U')[0].toUpperCase()}</div><div><div style="font-weight:600">${u.fullName||u.username||'User'}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${u.referralCode||''}</div></div></div></td>
-   <td>${u.phone}</td>
-   <td style="font-weight:700;color:#f59e0b">Rs ${(u.balance||0).toLocaleString()}</td>
-   <td>Rs ${(u.totalDeposit||0).toLocaleString()}</td>
-   <td>${(u.activeInvests||[]).filter(a=>a.status!=='principal_returned').length} active</td>
-   <td>${u.referralsCount||0}</td>
-   <td><span style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;background:${u.kycStatus==='approved'?'rgba(34,197,94,.15);color:#22c55e':u.kycStatus==='pending'?'rgba(245,158,11,.15);color:#f59e0b':'rgba(255,255,255,.06);color:rgba(255,255,255,.5)'}">${(u.kycStatus||'not_submitted').toUpperCase()}</span></td>
-   <td style="font-size:10px;color:rgba(255,255,255,.4)">${u.createdAt?new Date(u.createdAt).toLocaleDateString():''}</td>
-   <td style="display:flex;gap:6px"><button class="btn btn-edit" onclick="openEdit('${u.phone}')">Edit • Firebase Sync</button><button class="btn btn-del" onclick="quickDelete('${u.phone}')">Del</button></td>
-  </tr>
- `).join('');
+  const tbody=document.getElementById('usersTable');
+  if(filteredUsers.length===0){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state">✅ Data Cleared / Fresh Start<br>No users found after clear<br>New users will appear here when they signup from main app v22<br><span style="font-size:10px;color:rgba(255,255,255,.3)">Firebase: adiimei-invest/users • Real-time listener active • Password protected</span></div></td></tr>';return;}
+  tbody.innerHTML=filteredUsers.map(u=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#000;font-weight:800;font-size:11px">${(u.fullName||'U')[0].toUpperCase()}</div><div><div style="font-weight:700;font-size:11px">${u.fullName||u.kycData?.legalName||'User'}</div><div style="font-size:9px;color:rgba(255,255,255,.4)">Legal: ${u.kycData?.legalName||''} • ${u.referralCode||''}</div></div></div></td>
+      <td><div style="font-weight:600">${u.phone}</div><div style="font-size:10px;color:#f59e0b">${u.kycData?.cnic||''}</div></td>
+      <td style="font-weight:700;color:#f59e0b">Rs ${(u.balance||0).toLocaleString()}</td>
+      <td>Rs ${(u.totalDeposit||0).toLocaleString()}</td>
+      <td>${(u.activeInvests||[]).filter(a=>a.status!=='principal_returned').length}</td>
+      <td><span style="padding:3px 8px;border-radius:999px;font-size:9px;font-weight:800;background:${u.kycStatus==='approved'?'rgba(34,197,94,.15);color:#22c55e':u.kycStatus==='pending'?'rgba(245,158,11,.15);color:#f59e0b':'rgba(255,255,255,.06);color:rgba(255,255,255,.4)'}">${(u.kycStatus||'not_submitted').toUpperCase()}</span></td>
+      <td style="font-size:9px;color:rgba(255,255,255,.4)">${u.createdAt?new Date(u.createdAt).toLocaleDateString():''}</td>
+      <td><button class="btn btn-edit" onclick="openEdit('${u.phone}')">Edit</button> <button class="btn btn-del" onclick="quickDelete('${u.phone}')">Del</button></td>
+    </tr>
+  `).join('');
+}
+function renderKycPending(){
+  const div=document.getElementById('kycPendingList');
+  const pend=allUsers.filter(u=>u.kycStatus==='pending');
+  if(pend.length===0){div.innerHTML='<div class="empty-state" style="padding:20px;font-size:11px">No KYC pending</div>';return;}
+  div.innerHTML=pend.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:#0d1023;border:1px solid rgba(245,158,11,.2);margin-bottom:8px"><div><div style="font-size:12px;font-weight:700">Legal: <span style="color:#f59e0b">${u.kycData?.legalName||u.fullName}</span> • CNIC: <span style="color:#f59e0b">${u.kycData?.cnic||''}</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">${u.phone} • ${u.kycData?.father||''} • ${u.kycData?.addr||''}</div></div><div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="quickApproveKyc('${u.phone}')">✓ Approve</button><button class="btn btn-del" onclick="rejectKyc('${u.phone}')">Reject</button></div></div>`).join('');
 }
 function renderPending(){
- const pendingDiv=document.getElementById('pendingList');
- let pendings=[];
- allUsers.forEach(u=>{(u.transactions||[]).forEach((t,i)=>{if(t.status==='pending'){pendings.push({user:u,tx:t,index:i});}});});
- if(pendings.length===0){pendingDiv.innerHTML='<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">No pending transactions • All clear ✅</div>';return;}
- pendingDiv.innerHTML=pendings.slice(0,50).map(p=>`
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:#0a0e1f;border:1px solid rgba(255,255,255,.06)">
-   <div><div style="font-size:12px;font-weight:600">${p.user.fullName} • ${p.user.phone} • ${p.tx.type.toUpperCase()} RS ${p.tx.amount}</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">${p.tx.desc||''} • ${new Date(p.tx.date).toLocaleString()}</div></div>
-   <div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="approveTx('${p.user.phone}',${p.index},${p.tx.amount},'${p.tx.type}')">Approve • Add Balance</button><button class="btn btn-del" onclick="rejectTx('${p.user.phone}',${p.index})">Reject</button></div>
-  </div>
- `).join('');
+  const div=document.getElementById('pendingList');
+  let pendings=[];allUsers.forEach(u=>{(u.transactions||[]).forEach((t,i)=>{if(t.status==='pending')pendings.push({user:u,tx:t,index:i});});});
+  if(pendings.length===0){div.innerHTML='<div class="empty-state" style="padding:20px;font-size:11px">No pending</div>';return;}
+  div.innerHTML=pendings.slice(0,50).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:#0d1023;border:1px solid rgba(255,255,255,.06);margin-bottom:6px"><div style="font-size:11px"><b>${p.user.phone}</b> • ${p.tx.type} RS ${p.tx.amount} • Legal: ${p.user.kycData?.legalName||''} • CNIC: ${p.user.kycData?.cnic||''}</div><div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="approveTx('${p.user.phone}',${p.index},${p.tx.amount},'${p.tx.type}')">Approve</button><button class="btn btn-del" onclick="rejectTx('${p.user.phone}',${p.index})">Reject</button></div></div>`).join('');
 }
 function filterUsers(){
- const q=document.getElementById('search').value.toLowerCase();const status=document.getElementById('filterStatus').value;
- filteredUsers=allUsers.filter(u=>{
-  const matchQ=!q||u.phone.toLowerCase().includes(q)||(u.fullName||'').toLowerCase().includes(q)||(u.referralCode||'').toLowerCase().includes(q);
-  let matchS=true;
-  if(status==='pending'){matchS=(u.transactions||[]).some(t=>t.status==='pending');}
-  else if(status==='not_submitted'){matchS=(u.kycStatus||'not_submitted')==='not_submitted';}
-  return matchQ&&matchS;
- });
- renderUsers();
+  const q=document.getElementById('search').value.toLowerCase();const status=document.getElementById('filterStatus').value;
+  filteredUsers=allUsers.filter(u=>{
+    const matchQ=!q||u.phone.toLowerCase().includes(q)||(u.fullName||'').toLowerCase().includes(q)||(u.kycData?.legalName||'').toLowerCase().includes(q)||(u.kycData?.cnic||'').toLowerCase().includes(q);
+    let matchS=true;if(status==='kyc_pending')matchS=u.kycStatus==='pending';else if(status==='kyc_not')matchS=(u.kycStatus||'not_submitted')==='not_submitted';return matchQ&&matchS;
+  });renderUsers();
 }
 function openEdit(phone){
- const u=allUsers.find(x=>x.phone===phone);if(!u)return;
- editingPhone=phone;
- document.getElementById('editPhone').textContent=phone;
- document.getElementById('eName').value=u.fullName||'';
- document.getElementById('eBalance').value=u.balance||0;
- document.getElementById('eDeposit').value=u.totalDeposit||0;
- document.getElementById('eEarning').value=u.totalEarning||0;
- document.getElementById('eWithdraw').value=u.totalWithdraw||0;
- document.getElementById('eRefs').value=u.referralsCount||0;
- document.getElementById('eRefEarn').value=u.referralEarnings||0;
- document.getElementById('eKyc').value=u.kycStatus||'not_submitted';
- document.getElementById('eRefCode').value=u.referralCode||'';
- document.getElementById('ePlans').value=JSON.stringify(u.activeInvests||[],null,2);
- document.getElementById('editModal').classList.add('active');
+  const u=allUsers.find(x=>x.phone===phone);if(!u)return;editingPhone=phone;
+  document.getElementById('editPhone').textContent=phone;
+  document.getElementById('eLegalName').value=u.kycData?.legalName||u.fullName||'';
+  document.getElementById('eCnic').value=u.kycData?.cnic||'';
+  document.getElementById('eFather').value=u.kycData?.father||'';
+  document.getElementById('eDob').value=u.kycData?.dob||'';
+  document.getElementById('eAddr').value=u.kycData?.addr||'';
+  document.getElementById('eBalance').value=u.balance||0;
+  document.getElementById('eDeposit').value=u.totalDeposit||0;
+  document.getElementById('eKyc').value=u.kycStatus||'not_submitted';
+  document.getElementById('eRefCode').value=u.referralCode||'';
+  document.getElementById('ePlans').value=JSON.stringify(u.activeInvests||[],null,2);
+  document.getElementById('editModal').classList.add('active');
 }
 function closeModal(){document.getElementById('editModal').classList.remove('active');editingPhone=null;}
 async function saveUser(){
- if(!editingPhone)return;
- try{
-  const updates={
-   fullName:document.getElementById('eName').value.trim(),
-   balance:Number(document.getElementById('eBalance').value||0),
-   totalDeposit:Number(document.getElementById('eDeposit').value||0),
-   totalEarning:Number(document.getElementById('eEarning').value||0),
-   totalWithdraw:Number(document.getElementById('eWithdraw').value||0),
-   referralsCount:Number(document.getElementById('eRefs').value||0),
-   referralEarnings:Number(document.getElementById('eRefEarn').value||0),
-   kycStatus:document.getElementById('eKyc').value,
-   referralCode:document.getElementById('eRefCode').value.trim().toUpperCase(),
-  };
-  try{const plans=JSON.parse(document.getElementById('ePlans').value||'[]');updates.activeInvests=plans;}catch(e){alert('Plans JSON invalid - skipping plans update');}
-  await db.collection('users').doc(editingPhone).update(updates);
-  alert('✅ User '+editingPhone+' updated • Firebase synced • User app will live update');
-  closeModal();loadUsers();
- }catch(e){alert('Error: '+e.message);}
+  if(!editingPhone)return;
+  try{
+    const legalName=document.getElementById('eLegalName').value.trim();const cnic=document.getElementById('eCnic').value.trim();
+    const updates={fullName:legalName,balance:Number(document.getElementById('eBalance').value||0),totalDeposit:Number(document.getElementById('eDeposit').value||0),kycStatus:document.getElementById('eKyc').value,referralCode:document.getElementById('eRefCode').value.trim().toUpperCase(),kycData:{legalName:legalName,cnic:cnic,father:document.getElementById('eFather').value.trim(),dob:document.getElementById('eDob').value,addr:document.getElementById('eAddr').value.trim(),submittedAt:new Date().toISOString()}};
+    try{updates.activeInvests=JSON.parse(document.getElementById('ePlans').value||'[]');}catch(e){}
+    await db.collection('users').doc(editingPhone).update(updates);
+    alert('✅ Updated '+editingPhone+' • Legal: '+legalName+' • CNIC: '+cnic);closeModal();
+  }catch(e){alert('Error: '+e.message);}
 }
-async function addBalance(){
- const amt=prompt('Add bonus balance amount RS? (e.g., 1000)');if(!amt)return;
- const n=Number(amt);if(isNaN(n)||n<=0){alert('Invalid');return;}
- try{
-  const u=allUsers.find(x=>x.phone===editingPhone);
-  const newBal=(u.balance||0)+n;
-  await db.collection('users').doc(editingPhone).update({balance:newBal,transactions:firebase.firestore.FieldValue.arrayUnion({type:'bonus',amount:n,desc:'Admin bonus RS '+n, date:new Date().toISOString(),status:'approved'})});
-  alert('✅ Added RS '+n+' to '+editingPhone+' • New balance RS '+newBal);
-  closeModal();loadUsers();
- }catch(e){alert(e.message);}
+async function approveKyc(){if(!editingPhone)return;try{await db.collection('users').doc(editingPhone).update({kycStatus:'approved'});alert('✅ KYC Approved • Withdraw Unlocked');closeModal();}catch(e){alert(e.message);}}
+async function quickApproveKyc(phone){if(!confirm('Approve KYC for '+phone+'?'))return;try{await db.collection('users').doc(phone).update({kycStatus:'approved'});alert('Approved');}catch(e){alert(e.message);}}
+async function rejectKyc(phone){if(!confirm('Reject KYC '+phone+'?'))return;try{await db.collection('users').doc(phone).update({kycStatus:'rejected'});alert('Rejected');}catch(e){alert(e.message);}}
+async function deleteUser(){if(!editingPhone)return;if(!confirm('Delete '+editingPhone+'?'))return;try{await db.collection('users').doc(editingPhone).delete();alert('Deleted');closeModal();}catch(e){alert(e.message);}}
+async function quickDelete(phone){if(!confirm('Delete '+phone+'?'))return;try{await db.collection('users').doc(phone).delete();alert('Deleted '+phone);}catch(e){alert(e.message);}}
+
+async function clearAllUsers(){
+  if(!confirm('⚠️ CLEAR ALL DATA?\n\nThis will DELETE ALL USERS from Firebase adiimei-invest/users collection!\nAll old data will be cleared for fresh start!\n\nAre you sure?'))return;
+  if(!confirm('Second Confirm: Really delete ALL users? This cannot be undone!\nType YES - All data will be cleared!'))return;
+  const pwd=prompt('Enter admin password again to confirm CLEAR ALL DATA: (Diamond123 / 03313394007 / Admin123)');
+  if(!ADMIN_PASSWORDS.includes(pwd)){alert('❌ Wrong password - Clear cancelled');return;}
+  document.getElementById('clearStatus').textContent='Clearing...';
+  try{
+    const snap=await db.collection('users').get();
+    if(snap.empty){alert('✅ Already empty - No data to clear - Fresh start already done!');document.getElementById('clearStatus').textContent='Already empty ✅';return;}
+    let count=0;
+    const batchSize=400;
+    let docs=[...snap.docs];
+    while(docs.length>0){
+      const batch=db.batch();
+      const chunk=docs.splice(0,batchSize);
+      chunk.forEach(d=>{batch.delete(d.ref);count++;});
+      await batch.commit();
+    }
+    document.getElementById('clearStatus').textContent='Cleared '+count+' users ✅ Fresh start!';
+    alert('✅ SUCCESS! Cleared '+count+' users from Firebase!\n\nNow admin panel shows 0 users - Fresh start complete!\nNew users will appear here when they signup from main app v22.');
+  }catch(e){
+    document.getElementById('clearStatus').textContent='Error: '+e.message;
+    alert('Error clearing: '+e.message+'\n\nTry manually: Firebase Console → Firestore → users → Delete all documents');
+  }
 }
-async function deleteUser(){if(!editingPhone)return;if(!confirm('Delete user '+editingPhone+' permanently? Firebase se delete ho jayega!'))return;try{await db.collection('users').doc(editingPhone).delete();alert('Deleted '+editingPhone);closeModal();loadUsers();}catch(e){alert(e.message);}}
-async function quickDelete(phone){if(!confirm('Delete '+phone+'?'))return;try{await db.collection('users').doc(phone).delete();alert('Deleted');loadUsers();}catch(e){alert(e.message);}}
-async function approveTx(phone,txIndex,amount,type){
- if(!confirm('Approve '+type+' RS '+amount+' for '+phone+'? Balance will update if deposit.'))return;
- try{
-  const u=allUsers.find(x=>x.phone===phone);if(!u)return;
-  const txs=[...(u.transactions||[])];
-  if(!txs[txIndex]){alert('Tx not found');return;}
-  txs[txIndex].status='approved';
-  let updates={transactions:txs};
-  if(type==='deposit'){updates.balance=(u.balance||0)+Number(amount);updates.totalDeposit=(u.totalDeposit||0)+Number(amount);}
-  if(type==='withdraw'){updates.totalWithdraw=(u.totalWithdraw||0)+Number(amount);}
-  await db.collection('users').doc(phone).update(updates);
-  alert('✅ Approved '+type+' RS '+amount+' for '+phone+' • Firebase synced');
-  loadUsers();
- }catch(e){alert(e.message);}
+
+async function approveTx(phone,idx,amt,type){
+  if(!confirm('Approve '+type+' RS '+amt+' for '+phone+'?'))return;
+  try{
+    const u=allUsers.find(x=>x.phone===phone);const txs=[...(u.transactions||[])];txs[idx].status='approved';
+    let upd={transactions:txs};if(type==='deposit'){upd.balance=(u.balance||0)+Number(amt);upd.totalDeposit=(u.totalDeposit||0)+Number(amt);}
+    await db.collection('users').doc(phone).update(upd);alert('Approved RS '+amt);
+  }catch(e){alert(e.message);}
 }
-async function rejectTx(phone,txIndex){
- if(!confirm('Reject transaction for '+phone+'?'))return;
- try{
-  const u=allUsers.find(x=>x.phone===phone);const txs=[...(u.transactions||[])];if(!txs[txIndex])return;
-  const amount=txs[txIndex].amount;const type=txs[txIndex].type;
-  // if withdraw pending, refund balance
-  let refund=0;
-  if(type==='withdraw'){refund=Number(amount);}
-  txs[txIndex].status='rejected';
-  let updates={transactions:txs};
-  if(refund>0){updates.balance=(u.balance||0)+refund;}
-  await db.collection('users').doc(phone).update(updates);
-  alert('Rejected • '+(refund>0?'Refunded RS '+refund:'')+' • Synced');
-  loadUsers();
- }catch(e){alert(e.message);}
+async function rejectTx(phone,idx){
+  if(!confirm('Reject for '+phone+'?'))return;
+  try{
+    const u=allUsers.find(x=>x.phone===phone);const txs=[...(u.transactions||[])];const amt=txs[idx]?.amount;const type=txs[idx]?.type;let refund=0;if(type==='withdraw')refund=Number(amt);txs[idx].status='rejected';let upd={transactions:txs};if(refund>0)upd.balance=(u.balance||0)+refund;await db.collection('users').doc(phone).update(upd);alert('Rejected'+(refund>0?' Refunded RS '+refund:''));
+  }catch(e){alert(e.message);}
 }
-window.addEventListener('load',loadUsers);
+window.addEventListener('load',checkSession);
 </script>
 </body>
 </html>
