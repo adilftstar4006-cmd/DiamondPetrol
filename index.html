@@ -130,6 +130,22 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 .kyc-badge.approved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
 .kyc-badge.pending{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
 .kyc-badge.not{background:rgba(255,255,255,.06);color:rgba(255,255,255,.4)}
+
+/* --- NEW ANIMATIONS - Thori si animation add - No other change --- */
+@keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 rgba(245,158,11,0)}50%{box-shadow:0 0 20px rgba(245,158,11,.25)}}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes iconPop{0%{transform:scale(.8)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.solar-plan{animation:floatCard 4s ease-in-out infinite, glowPulse 3s ease-in-out infinite}
+.solar-plan:nth-child(2){animation-delay:.2s}
+.solar-plan:nth-child(3){animation-delay:.4s}
+.solar-plan:nth-child(4){animation-delay:.6s}
+.solar-plan::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:translateX(-100%);animation:shimmer 3s infinite}
+.buy-btn{margin-top:10px;width:100%;padding:8px 10px;border-radius:999px;border:none;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:11px;cursor:pointer;letter-spacing:.5px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.buy-btn:hover{transform:scale(1.03);box-shadow:0 6px 18px rgba(245,158,11,.35)}
+.buy-btn:active{transform:scale(.97)}
+.balance-card{animation:glowPulse 4s ease-in-out infinite}
+
 </style>
 </head>
 <body>
@@ -180,16 +196,16 @@ const firebaseConfig={apiKey:"AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",authDomain:
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
 let currentUser=null,unsub=null,currentPage='home',isProcessing=false;
 const PLANS=[
-{id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'🟢',cls:'pso'},
-{id:2,name:'Shell Basic',company:'SHELL',kw:'2.5K Ltr',price:5000,daily:200,total:3000,icon:'🟡',cls:'shell',popular:false},
-{id:3,name:'PSO Silver',company:'PSO',kw:'4K Ltr',price:7500,daily:300,total:4500,icon:'🟢',cls:'pso'},
-{id:4,name:'Shell Gold',company:'SHELL',kw:'6K Ltr',price:10000,daily:400,total:6000,icon:'🔴',cls:'shell',popular:true},
-{id:5,name:'Total Premium',company:'TOTAL PARCO',kw:'8K Ltr',price:15000,daily:600,total:9000,icon:'🔵',cls:'total'},
-{id:6,name:'PSO Pro',company:'PSO',kw:'12K Ltr',price:20000,daily:800,total:12000,icon:'🟢',cls:'pso'},
-{id:7,name:'Shell Elite',company:'SHELL',kw:'18K Ltr',price:30000,daily:1200,total:18000,icon:'🟡',cls:'shell'},
-{id:8,name:'PSO Ultra',company:'PSO OFFICIAL',kw:'24K Ltr',price:40000,daily:1600,total:24000,icon:'⛽',cls:'pso'},
-{id:9,name:'Shell Max',company:'SHELL OFFICIAL',kw:'35K Ltr',price:55000,daily:2200,total:33000,icon:'⛽',cls:'shell'},
-{id:10,name:'Diamond Infinity',company:'PSO x SHELL',kw:'50K Ltr',price:75000,daily:3000,total:45000,icon:'💎',cls:'total'},
+{id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'⛽',cls:'pso',logo:'⛽',size:28},
+{id:2,name:'Shell Basic',company:'SHELL',kw:'2.5K Ltr',price:5000,daily:200,total:3000,icon:'⛽',cls:'shell',logo:'🛢️',size:32},
+{id:3,name:'PSO Silver',company:'PSO',kw:'4K Ltr',price:7500,daily:300,total:4500,icon:'🛢️',cls:'pso',logo:'🛢️',size:34},
+{id:4,name:'Shell Gold',company:'SHELL',kw:'6K Ltr',price:10000,daily:400,total:6000,icon:'🏆',cls:'shell',popular:true,logo:'🏭',size:38},
+{id:5,name:'Total Premium',company:'TOTAL PARCO',kw:'8K Ltr',price:15000,daily:600,total:9000,icon:'🏭',cls:'total',logo:'🚛',size:40},
+{id:6,name:'PSO Pro',company:'PSO',kw:'12K Ltr',price:20000,daily:800,total:12000,icon:'🚛',cls:'pso',logo:'🏗️',size:42},
+{id:7,name:'Shell Elite',company:'SHELL',kw:'18K Ltr',price:30000,daily:1200,total:18000,icon:'🏗️',cls:'shell',logo:'⛽💎',size:44},
+{id:8,name:'PSO Ultra',company:'PSO OFFICIAL',kw:'24K Ltr',price:40000,daily:1600,total:24000,icon:'💎',cls:'pso',logo:'💎',size:46},
+{id:9,name:'Shell Max',company:'SHELL OFFICIAL',kw:'35K Ltr',price:55000,daily:2200,total:33000,icon:'💎',cls:'shell',logo:'💎💎',size:48},
+{id:10,name:'Diamond Infinity',company:'PSO x SHELL',kw:'50K Ltr',price:75000,daily:3000,total:45000,icon:'👑',cls:'total',logo:'👑',size:52},
 ];
 
 function toast(m,t='ok'){const w=document.getElementById('toastWrap');const d=document.createElement('div');d.className='toast '+t;d.innerHTML=(t==='ok'?'✅ ':'⚠️ ')+m;w.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transform='translateY(-10px)';setTimeout(()=>d.remove(),300)},3000);}
@@ -254,15 +270,34 @@ function renderApp(){
    <div class="plans-grid">
     ${PLANS.map(p=>`
      <div class="solar-plan ${p.cls} ${p.popular?'popular':''}">
-      <div class="icon">${p.company==='PSO'?'🟢':p.company.includes('SHELL')?'🔴':'🔵'}</div>
-      <div class="kw-badge">${p.kw}</div>
+      <div class="icon" style="width:${p.size}px;height:${p.size}px;font-size:${Math.round(p.size*0.6)}px;background:linear-gradient(135deg,${p.company==='PSO'?'#16a34a,#22c55e':p.company.includes('SHELL')?'#dc2626,#f59e0b':'#2563eb,#60a5fa'});animation:iconPop .6s ease">${p.logo}</div>
+      <div class="kw-badge">${p.kw} • ${p.company}</div>
       <div class="name">${p.name}</div>
       <div class="invest">RS ${p.price.toLocaleString()} <small>invest</small></div>
-      <div class="daily">⚡ RS ${p.daily}/day</div>
-      <div class="meta"><span>📅 15 days</span><span>↑ 4%</span><span>🪙 ${p.total} RS</span><span>${p.company}</span></div>
+      <div class="daily">⚡ RS ${p.daily}/day • 4% Daily</div>
+      <div class="meta"><span>📅 15 days</span><span>↑ 4%</span><span>🪙 ${p.total} RS</span></div>
+      <button class="buy-btn" onclick="event.stopPropagation();investPlan(p.price,p.name,p.daily)">🛒 BUY OFFER • RS ${p.price.toLocaleString()}</button>
      </div>
     `).join('')}
    </div>
+
+
+   ${(() => {
+     const active = (currentUser.activeInvests||[]).filter(a=>a.status!=='principal_returned');
+     if(active.length===0) return '';
+     return `
+   <div class="solar-card" style="margin-top:16px;border:1px solid rgba(34,197,94,.25);background:linear-gradient(135deg,#151a33,#162e1e)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#22c55e;font-size:14px">✅ My Purchased Offers • Dashboard</div><span style="font-size:10px;padding:4px 10px;border-radius:999px;background:rgba(34,197,94,.15);color:#22c55e">${active.length} Active</span></div>
+    <div style="display:grid;gap:10px">
+     ${active.map(a=>`
+      <div style="background:#0d1023;border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+       <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:12px">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">Daily: RS ${a.daily} • Claimed: RS ${a.totalClaimed||0} • ${a.daysCompleted||0}/15 days</div><div style="margin-top:6px;height:5px;background:#1a1a1a;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div></div>
+       <div style="display:flex;flex-direction:column;gap:6px"><button onclick="claimOne('${a.id}')" style="padding:8px 16px;border-radius:999px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;font-weight:800;font-size:11px;border:none;cursor:pointer;animation:glowPulse 2s infinite">💰 DAILY COLLECT • RS ${a.daily}</button><div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
+      </div>
+     `).join('')}
+    </div>
+   </div>`;
+   })()}
 
    <div class="solar-card" style="margin-top:16px">
     <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:10px">👑 VIP Guide — How Diamond Petrol Investment Works</div>
@@ -436,16 +471,8 @@ function renderApp(){
      <div style="display:grid;gap:10px">
       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Full Legal Name (As per CNIC) *</div><input id="kycLegalName" type="text" placeholder="Muhammad Adil Aziz (As per CNIC)" value="${currentUser.kycData?.legalName||currentUser.fullName||''}" class="input-dark"></div>
       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">CNIC Number (35201-1234567-1) *</div><input id="kycCnic" type="text" placeholder="35201-1234567-1" value="${currentUser.kycData?.cnic||''}" class="input-dark" maxlength="15"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Date of Birth</div><input id="kycDob" type="date" value="${currentUser.kycData?.dob||''}" class="input-dark"></div>
-       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Father Name (As per CNIC)</div><input id="kycFather" type="text" placeholder="Father Name" value="${currentUser.kycData?.father||''}" class="input-dark"></div>
-      </div>
-      <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Complete Address (As per CNIC)</div><input id="kycAddr" type="text" placeholder="House, Street, City, District" value="${currentUser.kycData?.addr||''}" class="input-dark"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-       <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">📄</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">CNIC Front Side *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
-       <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">📄</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">CNIC Back Side *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
-      </div>
-      <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">🤳</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">Selfie with CNIC (Holding CNIC) *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
+      <input id="kycDob" type="hidden" value="2000-01-01"><input id="kycFather" type="hidden" value="As per CNIC"><input id="kycAddr" type="hidden" value="As per CNIC">
+      <div style="padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);font-size:11px;color:#fbbf24;line-height:1.5">ℹ️ KYC Simplified • Only Full Legal Name + CNIC Required • No Photo Upload Needed • Admin will verify via CNIC • Withdraw KYC ke bagair nahi hoga</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
       <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.6)"><input type="checkbox" id="kycAgree" style="accent-color:#f59e0b"> <label for="kycAgree">I confirm Full Legal Name and CNIC are correct as per my CNIC and I am 18+ years old.</label></div>
       <button onclick="submitKyc()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:800;font-size:13px">Submit KYC • CNIC Verification • PSO Shell Official</button>
       <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;line-height:1.4">KYC data encrypted in Firebase • Admin reviews 24h • Withdraw tab will unlock after approval • Full Legal Name + CNIC mandatory</div>
@@ -477,6 +504,17 @@ async function submitWithdraw(){
  try{const fee=Math.ceil(amount*0.05);const receive=amount-fee;const tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending - KYC: '+(currentUser.kycData?.legalName||'')+' - Fee '+fee, date:new Date().toISOString(),status:'pending'};const newBal=currentUser.balance-amount;await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Withdraw RS '+amount+' requested • Pending • KYC verified • You get RS '+receive,'ok');renderApp();}catch(e){toast(e.message,'err');}
 }
 async function submitKyc(){
+ const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value||'2000-01-01';const father=document.getElementById('kycFather')?.value.trim()||'As per CNIC';const addr=document.getElementById('kycAddr')?.value.trim()||'As per CNIC';const agree=document.getElementById('kycAgree')?.checked;
+ if(!legalName||legalName.length<3){toast('Full Legal Name as per CNIC required','err');return;}if(!cnic||cnic.length<13){toast('CNIC Number required 35201-1234567-1 format','err');return;}if(!agree){toast('Please confirm checkbox','err');return;}
+ try{
+  const kycData={legalName:legalName,cnic:cnic,dob:dob,father:father,addr:addr,submittedAt:new Date().toISOString()};
+  await db.collection('users').doc(currentUser.phone).update({kycStatus:'pending',kycData:kycData,fullName:legalName});
+  currentUser.kycStatus='pending';currentUser.kycData=kycData;currentUser.fullName=legalName;
+  toast('KYC Submitted • Legal: '+legalName+' • CNIC: '+cnic+' • Simplified No Photo • Pending 24h','ok');renderApp();
+ }catch(e){toast(e.message,'err');}
+ return;
+}
+async function submitKycOLD_DUPLICATE(){
  const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value;const father=document.getElementById('kycFather')?.value.trim();const addr=document.getElementById('kycAddr')?.value.trim();const agree=document.getElementById('kycAgree')?.checked;
  if(!legalName||legalName.length<3){toast('Full Legal Name as per CNIC required','err');return;}if(!cnic||cnic.length<13){toast('CNIC Number required 35201-1234567-1 format','err');return;}if(!dob){toast('DOB required','err');return;}if(!father||father.length<3){toast('Father Name required as per CNIC','err');return;}if(!addr||addr.length<10){toast('Complete Address as per CNIC required','err');return;}if(!agree){toast('Please confirm Full Legal Name and CNIC correct checkbox','err');return;}
  try{
