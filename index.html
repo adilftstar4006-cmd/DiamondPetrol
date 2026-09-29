@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Diamond Solar - Perfect Inside UI + Glass Login Fixed</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Diamond Petrol - PSO Shell Official - Fixed Bottom Nav + KYC + Petrol Plans + Reviews</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -11,15 +11,13 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:#fff;min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:10px}
-
-/* TOAST */
 .toast-wrap{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{padding:10px 16px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(26,30,60,.95);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(20px);display:flex;gap:8px;min-width:200px;justify-content:center;animation:toastIn .35s}
 .toast.ok{border-color:rgba(52,211,153,.3);background:rgba(16,185,129,.18)}
 .toast.err{border-color:rgba(248,113,113,.3);background:rgba(239,68,68,.18)}
 @keyframes toastIn{from{transform:translateY(-16px) scale(.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
 
-/* LOGIN - GLASS FIXED - 1% BHI NAHI CHERNA */
+/* LOGIN GLASS FIXED - 1% BHI NAHI CHERNA */
 .auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;position:relative;z-index:10;background:linear-gradient(135deg,#0f0c29 0%,#302b63 30%,#24243e 70%,#2c3e50 100%)}
 .auth::before{content:'';position:fixed;inset:0;background:radial-gradient(900px 600px at 15% 15%,rgba(120,40,200,.35),transparent 60%),radial-gradient(800px 600px at 85% 85%,rgba(0,210,255,.25),transparent 60%);pointer-events:none}
 .glass-card{width:100%;max-width:400px;background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.06) 100%);backdrop-filter:blur(32px) saturate(1.6);-webkit-backdrop-filter:blur(32px) saturate(1.6);border:1px solid rgba(255,255,255,.18);border-radius:36px;padding:32px 26px 24px;box-shadow:0 24px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25);position:relative;overflow:hidden;animation:cardIn .9s cubic-bezier(.16,1,.3,1)}
@@ -63,77 +61,75 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 @keyframes formIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .footer{text-align:center;margin-top:16px;font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.8px}
 
-/* PERFECT SOLAR UI - EXACT AS SCREENSHOTS */
+/* APP - DIAMOND PETROL PERFECT */
 .app{display:none;min-height:100vh;background:#0d1023;position:relative;z-index:10}
 .app.active{display:block}
-.solar-top{height:56px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:#0d1023;position:sticky;top:0;z-index:30}
+.solar-top{height:56px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:#0d1023;position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(255,255,255,.04)}
 .solar-top-left{display:flex;align-items:center;gap:10px}
 .avatar-circle{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;font-weight:800;font-size:16px;color:#000}
 .welcome{font-size:13px;color:rgba(255,255,255,.6)}
 .welcome b{color:#fff;font-weight:700}
 .bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);display:grid;place-items:center;cursor:pointer}
-.solar-wrap{max-width:500px;margin:0 auto;padding:0 14px 100px}
+.solar-wrap{max-width:500px;margin:0 auto;padding:0 14px 120px}
 
-/* SOLAR BALANCE CARD - EXACT */
 .balance-card{background:linear-gradient(135deg,#1a1e3a 0%,#232845 100%);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:18px;position:relative;overflow:hidden;margin-bottom:12px}
-.balance-card::after{content:'☀️';position:absolute;right:-10px;top:10px;font-size:120px;opacity:.06;pointer-events:none;filter:blur(1px)}
+.balance-card::after{content:'⛽';position:absolute;right:-5px;top:10px;font-size:90px;opacity:.08;pointer-events:none}
 .balance-label{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:1.5px;color:rgba(255,255,255,.5);font-weight:600}
 .balance-amount{margin-top:8px;display:flex;align-items:baseline;gap:8px}
 .balance-amount .rs{font-size:18px;font-weight:800;color:#f59e0b}
-.balance-amount .val{font-size:36px;font-weight:800;letter-spacing:-1px}
+.balance-amount .val{font-size:32px;font-weight:800;letter-spacing:-1px}
 .daily-income{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:rgba(255,255,255,.5)}
 .daily-income b{color:#fff}
 .plan-badge{margin-top:12px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);font-size:11px;color:#f59e0b;font-weight:600}
 
-/* STATS 3 CARDS */
 .stats3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.stat-card{background:#151a33;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px 8px;text-align:center}
-.stat-card .num{font-size:18px;font-weight:800}
+.stat-card{background:#151a33;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px 6px;text-align:center}
+.stat-card .num{font-size:16px;font-weight:800}
 .stat-card .num.green{color:#34d399}
 .stat-card .num.blue{color:#60a5fa}
 .stat-card .num.white{color:#fff}
-.stat-card .label{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.5px;margin-top:2px;line-height:1.2}
+.stat-card .label{font-size:8px;color:rgba(255,255,255,.4);letter-spacing:.5px;margin-top:3px;line-height:1.2}
 
-/* BANNER */
 .banner{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#1a1a1a 0%,#232323 100%);border:1px solid rgba(245,158,11,.15);border-radius:999px;padding:8px 12px;margin-bottom:10px;font-size:11px;font-weight:600}
 .banner .left{display:flex;align-items:center;gap:6px}
 .banner .right{display:flex;align-items:center;gap:6px;color:#fbbf24}
 
-/* INFO PILL */
 .info-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);border-radius:999px;padding:6px 12px;font-size:11px;color:#fbbf24;margin-bottom:16px}
 
-/* SOLAR PLANS GRID - EXACT SCREENSHOT */
 .plans-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.plans-header h2{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700}
+.plans-header h2{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700}
 .plans-header span{font-size:11px;color:rgba(255,255,255,.4)}
 .plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.solar-plan{background:#151a33;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px;position:relative;overflow:hidden;transition:.25s}
-.solar-plan:hover{border-color:rgba(245,158,11,.2);transform:translateY(-2px)}
+.solar-plan{background:#151a33;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px;position:relative;overflow:hidden;transition:.25s;cursor:pointer}
+.solar-plan:hover{border-color:rgba(245,158,11,.25);transform:translateY(-2px)}
 .solar-plan.popular::before{content:'POPULAR';position:absolute;top:10px;right:-28px;background:#f59e0b;color:#000;font-size:8px;font-weight:800;letter-spacing:1px;padding:3px 30px;transform:rotate(35deg)}
-.solar-plan .sun{font-size:26px;margin-bottom:8px}
-.kw-badge{display:inline-block;padding:3px 10px;border-radius:999px;background:#f59e0b;color:#000;font-size:10px;font-weight:800;margin-bottom:6px}
-.solar-plan .name{font-size:14px;font-weight:700;margin-bottom:4px}
-.solar-plan .invest{font-size:16px;font-weight:800;color:#f59e0b}
-.solar-plan .invest small{font-size:11px;font-weight:400;color:rgba(255,255,255,.4)}
-.solar-plan .daily{font-size:13px;font-weight:600;color:#34d399;display:flex;align-items:center;gap:4px;margin-top:2px}
-.solar-plan .meta{display:flex;gap:8px;margin-top:10px;font-size:10px;color:rgba(255,255,255,.4)}
-.solar-plan .meta span{display:flex;align-items:center;gap:3px}
+.solar-plan .icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px;margin-bottom:8px}
+.solar-plan.pso .icon{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.solar-plan.shell .icon{background:linear-gradient(135deg,#dc2626,#f59e0b)}
+.solar-plan.total .icon{background:linear-gradient(135deg,#2563eb,#60a5fa)}
+.kw-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#f59e0b;color:#000;font-size:9px;font-weight:800;margin-bottom:6px}
+.solar-plan .name{font-size:13px;font-weight:700;margin-bottom:3px;line-height:1.2}
+.solar-plan .invest{font-size:14px;font-weight:800;color:#f59e0b}
+.solar-plan .invest small{font-size:10px;font-weight:400;color:rgba(255,255,255,.4)}
+.solar-plan .daily{font-size:12px;font-weight:600;color:#34d399;display:flex;align-items:center;gap:3px;margin-top:2px}
+.solar-plan .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:9px;color:rgba(255,255,255,.45)}
 
-/* Bottom Nav - Exact */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:rgba(13,16,35,.96);backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));max-width:500px;margin:0 auto;left:50%;transform:translateX(-50%);width:100%}
-.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;color:rgba(255,255,255,.35);font-size:9px;cursor:pointer;min-width:50px;padding:4px 6px;border-radius:12px;transition:.2s}
+/* BOTTOM NAV FIXED - NEXCHY WALA SYSTEM FIX */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(13,16,35,.98);backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));max-width:500px;margin:0 auto;left:50%;transform:translateX(-50%);width:100%;box-shadow:0 -10px 40px rgba(0,0,0,.4)}
+.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;color:rgba(255,255,255,.35);font-size:8.5px;cursor:pointer;min-width:46px;padding:5px 4px;border-radius:10px;transition:.2s;position:relative}
 .bottom-nav button.active{color:#f59e0b}
-.bottom-nav button .ico{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;font-size:16px;transition:.2s}
-.bottom-nav button.active .ico{background:rgba(245,158,11,.15)}
-.bottom-nav .dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;position:absolute;top:4px;right:8px}
-
-/* Other Pages Original Solar Style */
+.bottom-nav button .ico{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;font-size:15px;transition:.2s}
+.bottom-nav button.active .ico{background:rgba(245,158,11,.15);transform:scale(1.05)}
 .solar-card{background:#151a33;border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:16px;margin-bottom:12px}
-.solar-btn-green{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(34,197,94,.25)}
-.solar-btn-orange{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(245,158,11,.25)}
 .input-dark{width:100%;padding:12px 14px;border-radius:12px;background:#0d1023;border:1px solid rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;transition:.2s}
 .input-dark:focus{border-color:rgba(245,158,11,.3)}
 .input-dark::placeholder{color:rgba(255,255,255,.3)}
+.solar-btn-green{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(34,197,94,.25)}
+.solar-btn-orange{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(245,158,11,.25)}
+.kyc-badge{display:inline-flex;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700}
+.kyc-badge.approved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+.kyc-badge.pending{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}
+.kyc-badge.not{background:rgba(255,255,255,.06);color:rgba(255,255,255,.4)}
 </style>
 </head>
 <body>
@@ -142,7 +138,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 <div id="auth" class="auth">
   <div class="glass-card">
     <div class="avatar-wrap"><div class="avatar"><svg viewBox="0 0 100 100"><circle cx="50" cy="32" r="18" fill="white"/><path d="M18 88 Q50 62 82 88 L82 100 L18 100 Z" fill="white"/></svg></div></div>
-    <div class="title"><h1>DIAMOND SOLAR</h1><p>Glass Login Fixed • Inside Solar Perfect UI • No White Glitch</p></div>
+    <div class="title"><h1>DIAMOND PETROL</h1><p>Glass Login Fixed • PSO Shell Official • No White Glitch</p></div>
     <div id="msg" class="msg"></div>
     <div id="loginForm" class="form active">
       <div class="field"><div class="field-row" id="row-loginPhone"><div class="icon">📱</div><input id="loginPhone" type="tel" placeholder="Phone 03313394007" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-loginPhone"></div></div>
@@ -159,22 +155,22 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 500</span></button>
       <div class="tabs"><span class="tab" onclick="switchTab('login')">LOGIN</span><span class="tab active">SIGNUP</span></div>
     </div>
-    <div class="footer">Login Fixed • No White Glitch • Inside Perfect Solar UI • v21</div>
+    <div class="footer">Login Fixed • No White Glitch • Petrol PSO Shell Official • v22</div>
   </div>
 </div>
 
 <div id="app" class="app">
   <div class="solar-top">
-    <div class="solar-top-left"><div class="avatar-circle" id="topAvatar">M</div><div class="welcome">☀️ Welcome back, <b id="topName">meai</b></div></div>
+    <div class="solar-top-left"><div class="avatar-circle" id="topAvatar">M</div><div class="welcome">⛽ Welcome back, <b id="topName">meai</b></div></div>
     <div class="bell">🔔</div>
   </div>
   <div class="solar-wrap"><div id="appContent"></div></div>
   <div class="bottom-nav">
     <button class="active" onclick="switchPage('home')" id="nav-home"><div class="ico">🏠</div>Home</button>
-    <button onclick="switchPage('plan')" id="nav-plan"><div style="position:relative"><div class="ico">☀️</div></div>Plan</button>
+    <button onclick="switchPage('plan')" id="nav-plan"><div class="ico">⛽</div>Plan</button>
     <button onclick="switchPage('wallet')" id="nav-wallet"><div class="ico">💳</div>Wallet</button>
     <button onclick="switchPage('history')" id="nav-history"><div class="ico">☰</div>History</button>
-    <button onclick="switchPage('team')" id="nav-team"><div style="position:relative"><div class="ico">👥</div><div class="dot" id="teamDot" style="display:none">0</div></div>Team</button>
+    <button onclick="switchPage('team')" id="nav-team"><div class="ico">👥</div>Team</button>
     <button onclick="switchPage('profile')" id="nav-profile"><div class="ico">👤</div>Profile</button>
   </div>
 </div>
@@ -184,16 +180,16 @@ const firebaseConfig={apiKey:"AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",authDomain:
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
 let currentUser=null,unsub=null,currentPage='home',isProcessing=false;
 const PLANS=[
-{id:1,name:'Solar Starter',kw:'1.2kW',price:3000,daily:120,total:1800},
-{id:2,name:'Solar Basic',kw:'2.0kW',price:5000,daily:200,total:3000},
-{id:3,name:'Solar Silver',kw:'3.0kW',price:7500,daily:300,total:4500},
-{id:4,name:'Solar Gold',kw:'4.0kW',price:10000,daily:400,total:6000,popular:true},
-{id:5,name:'Solar Premium',kw:'6.0kW',price:15000,daily:600,total:9000},
-{id:6,name:'Solar Pro',kw:'8.0kW',price:20000,daily:800,total:12000},
-{id:7,name:'Solar Elite',kw:'12kW',price:30000,daily:1200,total:18000},
-{id:8,name:'Solar Ultra',kw:'16kW',price:40000,daily:1600,total:24000},
-{id:9,name:'Solar Max',kw:'22kW',price:55000,daily:2200,total:33000},
-{id:10,name:'Solar Infinity',kw:'30kW',price:75000,daily:3000,total:45000},
+{id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'🟢',cls:'pso'},
+{id:2,name:'Shell Basic',company:'SHELL',kw:'2.5K Ltr',price:5000,daily:200,total:3000,icon:'🟡',cls:'shell',popular:false},
+{id:3,name:'PSO Silver',company:'PSO',kw:'4K Ltr',price:7500,daily:300,total:4500,icon:'🟢',cls:'pso'},
+{id:4,name:'Shell Gold',company:'SHELL',kw:'6K Ltr',price:10000,daily:400,total:6000,icon:'🔴',cls:'shell',popular:true},
+{id:5,name:'Total Premium',company:'TOTAL PARCO',kw:'8K Ltr',price:15000,daily:600,total:9000,icon:'🔵',cls:'total'},
+{id:6,name:'PSO Pro',company:'PSO',kw:'12K Ltr',price:20000,daily:800,total:12000,icon:'🟢',cls:'pso'},
+{id:7,name:'Shell Elite',company:'SHELL',kw:'18K Ltr',price:30000,daily:1200,total:18000,icon:'🟡',cls:'shell'},
+{id:8,name:'PSO Ultra',company:'PSO OFFICIAL',kw:'24K Ltr',price:40000,daily:1600,total:24000,icon:'⛽',cls:'pso'},
+{id:9,name:'Shell Max',company:'SHELL OFFICIAL',kw:'35K Ltr',price:55000,daily:2200,total:33000,icon:'⛽',cls:'shell'},
+{id:10,name:'Diamond Infinity',company:'PSO x SHELL',kw:'50K Ltr',price:75000,daily:3000,total:45000,icon:'💎',cls:'total'},
 ];
 
 function toast(m,t='ok'){const w=document.getElementById('toastWrap');const d=document.createElement('div');d.className='toast '+t;d.innerHTML=(t==='ok'?'✅ ':'⚠️ ')+m;w.appendChild(d);setTimeout(()=>{d.style.opacity='0';d.style.transform='translateY(-10px)';setTimeout(()=>d.remove(),300)},3000);}
@@ -213,10 +209,10 @@ async function doSignup(){
  let err=false;if(!name||name.length<3){showFieldError('row-signupName','err-signupName','Name min 3');err=true;}const phone=norm(raw);if(!raw){showFieldError('row-signupPhone','err-signupPhone','Phone required');err=true;}else if(!validPhone(phone)){showFieldError('row-signupPhone','err-signupPhone','Format 03313394007');err=true;}if(!pass||pass.length<6){showFieldError('row-signupPass','err-signupPass','Min 6');err=true;}if(err){toast('Fix errors','err');return;}
  setLoading('signupBtn',true);showMsg('Creating...','ok');
  try{const doc=await db.collection('users').doc(phone).get();if(doc.exists){showMsg('Already exists → Login','err');toast('Already exists','err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');return;}
- const id=Date.now().toString();const code='SOLAR'+phone.slice(-4)+Math.floor(Math.random()*90+10);
- const nu={id:id,phone:phone,fullName:name,username:name,email:phone+'@diamond.local',password:pass,referralCode:code,referredBy:ref,balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,referralsCount:0,referralEarnings:0,kycStatus:'not_submitted',activeInvests:[],withdrawHistory:[],transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],createdAt:new Date().toISOString()};
+ const id=Date.now().toString();const code='DIAMOND'+phone.slice(-4)+Math.floor(Math.random()*90+10);
+ const nu={id:id,phone:phone,fullName:name,username:name,email:phone+'@diamond.local',password:pass,referralCode:code,referredBy:ref,balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,referralsCount:0,referralEarnings:0,kycStatus:'not_submitted',kycData:null,activeInvests:[],withdrawHistory:[],transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],createdAt:new Date().toISOString()};
  await db.collection('users').doc(phone).set(nu);
- localStorage.setItem('diamond_current_glass_v21',phone);currentUser=nu;toast('Created + Rs 100','ok');setTimeout(()=>showApp(),800);
+ localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;toast('Created + Rs 100','ok');setTimeout(()=>showApp(),800);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');}
 }
 async function doLogin(){
@@ -226,7 +222,7 @@ async function doLogin(){
  setLoading('loginBtn',true);showMsg('Verifying...','ok');
  try{const doc=await db.collection('users').doc(phone).get();if(!doc.exists){showMsg('Not found → Signup','err');toast('Not found','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
  const fb=doc.data();if(fb.password!==pass){showMsg('Wrong password','err');showFieldError('row-loginPass','err-loginPass','Wrong');toast('Wrong password','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
- localStorage.setItem('diamond_current_glass_v21',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
+ localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
 function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();renderApp();startListener();}
@@ -237,158 +233,153 @@ function renderApp(){
  const todayIncome=(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((s,i)=>s+(i.daily||0),0);
  const totalProfit=totalEarn;const activeDays=(currentUser.activeInvests||[]).reduce((s,i)=>s+(i.daysCompleted||0),0);
  const activePlan=(currentUser.activeInvests||[]).find(i=>i.status==='active');
+ const kycStatus=currentUser.kycStatus||'not_submitted';
 
  if(currentPage==='home'){
   c.innerHTML=`
    <div class="balance-card">
-    <div class="balance-label">☀️ SOLAR BALANCE</div>
+    <div class="balance-label">⛽ DIAMOND PETROL BALANCE</div>
     <div class="balance-amount"><span class="rs">RS</span><span class="val">${bal.toFixed(2)}</span></div>
-    <div class="daily-income">⚡ Daily Solar Income: <b>${todayIncome} RS</b></div>
-    <div class="plan-badge">☀️ Plan: ${activePlan?activePlan.planName:'—'}</div>
+    <div class="daily-income">⚡ Daily Petrol Income: <b>${todayIncome} RS</b></div>
+    <div class="plan-badge">⛽ Plan: ${activePlan?activePlan.planName:'Basic'} • ${activePlan?activePlan.company||'PSO':'No Plan'}</div>
    </div>
    <div class="stats3">
-    <div class="stat-card"><div class="num green">${todayIncome.toFixed(2)}</div><div class="label">TODAY'S SOLAR<br>INCOME</div></div>
-    <div class="stat-card"><div class="num blue">${totalProfit.toFixed(2)}</div><div class="label">TOTAL SOLAR PROFIT</div></div>
+    <div class="stat-card"><div class="num green">${todayIncome.toFixed(2)}</div><div class="label">TODAY'S PETROL<br>INCOME</div></div>
+    <div class="stat-card"><div class="num blue">${totalProfit.toFixed(2)}</div><div class="label">TOTAL PETROL PROFIT</div></div>
     <div class="stat-card"><div class="num white">${activeDays}</div><div class="label">ACTIVE DAYS</div></div>
    </div>
-   <div class="banner"><div class="left">& Earn 4% Daily <span style="color:#f59e0b">★</span></div><div class="right">🎁 Refer & Earn 10% - 5% - 2% 🎁</div></div>
-   <div class="info-pill">ℹ️ Invest in a solar plan to start earning 4% daily</div>
-   <div class="plans-header"><h2>☀️ All Solar Investment Plans</h2><span>15 days return</span></div>
+   <div class="banner"><div class="left">& Earn 4% Daily ★</div><div class="right">🎁 Refer & Earn 10% - 5% - 2% 🎁</div></div>
+   <div class="info-pill">ℹ️ Invest in a petrol plan to start earning 4% daily</div>
+   <div class="plans-header"><h2>⛽ All Diamond Petrol Investment Plans</h2><span>15 days return</span></div>
    <div class="plans-grid">
     ${PLANS.map(p=>`
-     <div class="solar-plan ${p.popular?'popular':''}">
-      <div class="sun">☀️</div>
+     <div class="solar-plan ${p.cls} ${p.popular?'popular':''}">
+      <div class="icon">${p.company==='PSO'?'🟢':p.company.includes('SHELL')?'🔴':'🔵'}</div>
       <div class="kw-badge">${p.kw}</div>
       <div class="name">${p.name}</div>
       <div class="invest">RS ${p.price.toLocaleString()} <small>invest</small></div>
       <div class="daily">⚡ RS ${p.daily}/day</div>
-      <div class="meta"><span>📅 15 days</span><span>↑ 4%</span><span>🪙 ${p.total} RS</span></div>
+      <div class="meta"><span>📅 15 days</span><span>↑ 4%</span><span>🪙 ${p.total} RS</span><span>${p.company}</span></div>
      </div>
     `).join('')}
    </div>
-   <div class="solar-card" style="margin-top:14px">
-    <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:10px">👑 VIP Guide — How Solar Investment Works</div>
+
+   <div class="solar-card" style="margin-top:16px">
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:10px">👑 VIP Guide — How Diamond Petrol Investment Works</div>
     <div style="font-size:12px;line-height:1.7;color:rgba(255,255,255,.7)">
-     <div><span style="color:#f59e0b;font-weight:700">1</span> Choose a solar plan & invest once.</div>
-     <div><span style="color:#f59e0b;font-weight:700">2</span> Earn <b style="color:#fff">4% daily</b> solar income for 15 days.</div>
+     <div><span style="color:#f59e0b;font-weight:700">1</span> Choose a PSO/Shell petrol plan & invest once.</div>
+     <div><span style="color:#f59e0b;font-weight:700">2</span> Earn <b style="color:#fff">4% daily</b> petrol income for 15 days.</div>
      <div><span style="color:#f59e0b;font-weight:700">3</span> Collect your daily profit <b style="color:#fff">once every 24 hours</b>.</div>
      <div><span style="color:#f59e0b;font-weight:700">4</span> After 15 days, <b style="color:#fff">claim your investment</b> back.</div>
-     <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px">🛡️ 5% withdrawal fee • Min 500 RS</div>
-     <div style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:4px">🎧 24/7 VIP Support via Telegram</div>
+     <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px">🛡️ 5% withdrawal fee • Min 500 RS • KYC Required</div>
+     <div style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:4px">🎧 24/7 VIP Support via Telegram • PSO & Shell Official Partners</div>
     </div>
    </div>
-   <div class="solar-card" style="margin-top:12px">
-    <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);font-size:11px;color:#34d399;font-weight:600">🛡️ Verified Solar Platform</div>
-    <h2 style="margin-top:12px;font-size:20px;font-weight:800">About <span style="color:#f59e0b">Solar Income</span></h2>
-    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">☀️ <b style="color:#fff">Solar Income</b> is a premier solar investment platform that has been empowering users with <b style="color:#fff">daily passive income</b> through smart solar panel investments since 2023.</p>
-    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">✅ <b style="color:#fff">Registered & Verified</b> — We are a fully registered entity with a proven track record of <b style="color:#fff">timely payouts</b> and <b style="color:#fff">transparent operations</b>.</p>
-    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">🔋 Our platform is built on <b style="color:#fff">cutting-edge solar technology</b> with a focus on <b style="color:#fff">security, reliability</b> and <b style="color:#fff">user satisfaction</b>.</p>
+
+   <div class="solar-card">
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);font-size:11px;color:#34d399;font-weight:600">🛡️ Verified PSO & Shell Official Partners</div>
+    <h2 style="margin-top:12px;font-size:20px;font-weight:800">About <span style="color:#f59e0b">Diamond Petrol</span></h2>
+    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">⛽ <b style="color:#fff">Diamond Petrol</b> is a premier petrol investment platform in partnership with <b style="color:#fff">PSO, Shell & Total Parco</b> that has been empowering users with <b style="color:#fff">daily passive income</b> through smart petrol station investments since 2023.</p>
+    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">✅ <b style="color:#fff">Registered & Verified with PSO & Shell</b> — Fully registered entity with proven track record of <b style="color:#fff">timely payouts</b>.</p>
+    <p style="margin-top:10px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.6)">🔋 Built on <b style="color:#fff">official PSO & Shell supply chain</b> with focus on security and user satisfaction.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);padding:12px 0">
      <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#34d399">2023</div><div style="font-size:10px;color:rgba(255,255,255,.4)">FOUNDED</div></div>
-     <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#f59e0b">15K+</div><div style="font-size:10px;color:rgba(255,255,255,.4)">INVESTORS</div></div>
+     <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#f59e0b">25K+</div><div style="font-size:10px;color:rgba(255,255,255,.4)">INVESTORS</div></div>
      <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#60a5fa">99.9%</div><div style="font-size:10px;color:rgba(255,255,255,.4)">UPTIME</div></div>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;color:rgba(255,255,255,.5)"><span>✅ Registered</span><span>✅ Secure</span><span>✅ 24/7 Support</span><span>✅ Instant Withdraw</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;color:rgba(255,255,255,.5)"><span>✅ PSO Verified</span><span>✅ Shell Partner</span><span>✅ 24/7 Support</span><span>✅ Instant Withdraw</span></div>
+   </div>
+
+   <div class="solar-card" style="margin-top:16px">
+    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:12px">⭐ Diamond Petrol User Reviews • Real Earnings • 4.9/5</div>
+    <div style="display:grid;gap:10px">
+     <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px"><div style="display:flex;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:#f59e0b;display:grid;place-items:center;color:#000;font-weight:800;font-size:12px">A</div><div><div style="font-size:12px;font-weight:700">Ahmed Khan • PSO Gold</div><div style="font-size:10px;color:#fbbf24">★★★★★ 5.0 • 2 days ago</div></div></div><span style="font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#22c55e">Verified</span></div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:8px;line-height:1.5">"Maine PSO Gold RS 10,000 invest kiya, daily RS 400 araha hai! 15 din me RS 6,000 profit. Withdraw bhi 2 ghante me agaya JazzCash pe. Diamond Petrol is 100% real!"</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:6px">📍 Lahore • Earned: RS 24,000 • Withdraw: RS 18,500</div></div>
+     <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px"><div style="display:flex;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:#60a5fa;display:grid;place-items:center;color:#000;font-weight:800;font-size:12px">S</div><div><div style="font-size:12px;font-weight:700">Sana Ali • Shell Elite</div><div style="font-size:10px;color:#fbbf24">★★★★★ 5.0 • 5 days ago</div></div></div><span style="font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#22c55e">Verified</span></div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:8px;line-height:1.5">"Shell Elite RS 30,000 se daily RS 1,200! Main housewife hun, ghar baithe earning horahi hai. PSO Shell official partnership ki wajah se trust kiya. Best platform!"</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:6px">📍 Karachi • Earned: RS 54,000 • Team: 12 members</div></div>
+     <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px"><div style="display:flex;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:#22c55e;display:grid;place-items:center;color:#000;font-weight:800;font-size:12px">U</div><div><div style="font-size:12px;font-weight:700">Usman DGK • Diamond Infinity</div><div style="font-size:10px;color:#fbbf24">★★★★★ 5.0 • 1 week ago</div></div></div><span style="font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#22c55e">Verified</span></div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:8px;line-height:1.5">"Dera Ghazi Khan se hun, Diamond Infinity RS 75,000 invest kiya, daily RS 3,000! Petrol pump ka business jaisa profit. Referral se bhi RS 15,000 extra kamaya. Love Diamond Petrol!"</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:6px">📍 DG Khan • Earned: RS 89,000 • Withdraw: RS 75,000 • VIP 4</div></div>
+     <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px"><div style="display:flex;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:50%;background:#f87171;display:grid;place-items:center;color:#000;font-weight:800;font-size:12px">F</div><div><div style="font-size:12px;font-weight:700">Fatima Bibi • Total Premium</div><div style="font-size:10px;color:#fbbf24">★★★★☆ 4.9 • 3 days ago</div></div></div><span style="font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#22c55e">Verified</span></div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:8px;line-height:1.5">"Total Premium RS 15,000 se start kiya tha, ab Shell Max pe hun. Daily income se ghar ka kharcha nikal jata hai. Admin support bhi fast hai Telegram pe."</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:6px">📍 Multan • Earned: RS 31,500 • Withdraw: RS 28,000</div></div>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,.4)">⭐ 4.9/5 average from 25,000+ verified investors • PSO & Shell Official • Since 2023</div>
    </div>
   `;
-  // attach click to plans
-  setTimeout(()=>{document.querySelectorAll('.solar-plan').forEach((el,i)=>{el.style.cursor='pointer';el.onclick=()=>investPlan(PLANS[i].price,PLANS[i].name,PLANS[i].daily)});},100);
+  setTimeout(()=>{document.querySelectorAll('.solar-plan').forEach((el,i)=>{el.onclick=()=>investPlan(PLANS[i].price,PLANS[i].name,PLANS[i].daily)});},100);
  }else if(currentPage==='plan'){
   const active=(currentUser.activeInvests||[]).filter(a=>a.status!=='principal_returned');
   c.innerHTML=`
-   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">☀️ My Active Plan</div>
+   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">⛽ My Active Petrol Plan</div>
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:6px;color:#f59e0b;font-weight:700;font-size:13px">👑 VIP Plan Status</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.5">Track your active solar plan, daily earnings, and claim your investment back after 15 days. Stay on top of your solar income!</div>
+    <div style="display:flex;align-items:center;gap:6px;color:#f59e0b;font-weight:700;font-size:13px">👑 VIP Petrol Plan Status</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.5">Track your active PSO/Shell petrol plan, daily earnings, and claim your investment back after 15 days. Stay on top of your petrol income!</div>
    </div>
-   ${active.length===0?`
-    <div style="margin-top:20px"><div style="font-size:40px">☀️</div><div style="font-size:16px;margin-top:8px">No Active Plan<br><span style="font-size:13px;color:rgba(255,255,255,.5)">Go to Home and invest in a solar plan to start earning<br>4% daily</span></div></div>
-   `:`
+   ${active.length===0?`<div style="margin-top:20px"><div style="font-size:40px">⛽</div><div style="font-size:16px;margin-top:8px">No Active Petrol Plan<br><span style="font-size:13px;color:rgba(255,255,255,.5)">Go to Home and invest in a PSO/Shell petrol plan to start earning<br>4% daily</span></div></div>`:`
     <div style="display:grid;gap:10px;margin-top:12px">
-     ${active.map(a=>`
-      <div class="solar-card">
-       <div style="display:flex;justify-content:space-between"><div><div style="font-weight:700">${a.planName} • RS ${(a.amount||0).toLocaleString()}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Daily RS ${a.daily} • Total RS ${(a.daily*15).toLocaleString()} • ${a.daysCompleted||0}/15 days</div></div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#34d399">${a.status}</span></div>
-       <div style="margin-top:8px;height:6px;background:#0d1023;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>
-       <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">Claimed RS ${a.totalClaimed||0}</span><button onclick="claimOne('${a.id}')" style="padding:6px 14px;border-radius:999px;background:#22c55e;color:#000;font-weight:700;font-size:11px;border:none">CLAIM</button></div>
-      </div>
-     `).join('')}
-    </div>
-   `}
+     ${active.map(a=>`<div class="solar-card"><div style="display:flex;justify-content:space-between"><div><div style="font-weight:700">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Daily RS ${a.daily} • Total RS ${(a.daily*15).toLocaleString()} • ${a.daysCompleted||0}/15 days</div></div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.15);color:#34d399">${a.status}</span></div><div style="margin-top:8px;height:6px;background:#0d1023;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">Claimed RS ${a.totalClaimed||0}</span><button onclick="claimOne('${a.id}')" style="padding:6px 14px;border-radius:999px;background:#22c55e;color:#000;font-weight:700;font-size:11px;border:none">CLAIM DAILY</button></div></div>`).join('')}
+    </div>`}
   `;
  }else if(currentPage==='wallet'){
   c.innerHTML=`
-   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Solar Wallet</div>
-   <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Manage your deposits and withdrawals</div>
+   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Diamond Petrol Wallet</div>
+   <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Manage your deposits and withdrawals • PSO Shell Official</div>
    <div class="solar-card">
     <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:rgba(255,255,255,.5)">Available Balance</span><span style="font-size:20px;font-weight:800;color:#f59e0b">RS ${bal.toFixed(2)}</span></div>
-    <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:rgba(255,255,255,.5)"><span>↑ Deposits: <b style="color:#fff">${totalDep} RS</b></span><span>↓ Withdrawals: <b style="color:#fff">${totalWd} RS</b></span><span>☀️ Solar Income: <b style="color:#fff">${totalEarn} RS</b></span></div>
+    <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:rgba(255,255,255,.5)"><span>↑ Deposits: <b style="color:#fff">${totalDep} RS</b></span><span>↓ Withdrawals: <b style="color:#fff">${totalWd} RS</b></span><span>⛽ Petrol Income: <b style="color:#fff">${totalEarn} RS</b></span></div>
+    ${kycStatus!=='approved'?`<div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);font-size:11px;color:#fca5a5">⚠️ KYC Required for Withdraw • Profile > KYC Submit CNIC & Full Legal Name</div>`:''}
    </div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
     <button class="solar-btn-green" onclick="switchPage('deposit')">↓ Deposit<br><small style="font-size:10px;font-weight:400">Add funds</small></button>
     <button class="solar-btn-orange" onclick="switchPage('withdraw')">↑ Withdraw<br><small style="font-size:10px;font-weight:400">Cash out</small></button>
    </div>
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ️ Solar Wallet Guidelines</div>
+    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ️ Diamond Petrol Wallet Guidelines</div>
     <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
-     <div>✅ Deposit via <b style="color:#fff">Easypaisa or JazzCash</b>.</div>
-     <div>✅ Withdraw to <b style="color:#fff">Easypaisa, JazzCash, or Bank</b>.</div>
+     <div>✅ Deposit via <b style="color:#fff">Easypaisa or JazzCash</b> • PSO Shell Official Account.</div>
+     <div>✅ Withdraw to <b style="color:#fff">Easypaisa, JazzCash, or Bank</b> • KYC must be approved.</div>
      <div>✅ Fee: <b style="color:#fff">5%</b> • Min: <b style="color:#fff">3000 RS</b> • Max: <b style="color:#fff">50000 RS</b>.</div>
-     <div>✅ All transactions require <b style="color:#fff">admin approval</b>.</div>
+     <div>✅ All transactions require <b style="color:#fff">admin approval</b> • 2-3 hours.</div>
     </div>
    </div>
   `;
  }else if(currentPage==='deposit'){
   c.innerHTML=`
-   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Solar Wallet</div>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"><button class="solar-btn-green">↓ Deposit<br><small>Add funds</small></button><button class="solar-btn-orange" style="opacity:.6" onclick="switchPage('withdraw')">↑ Withdraw<br><small>Cash out</small></button></div>
+   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Diamond Wallet</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"><button class="solar-btn-green">↓ Deposit<br><small>Add funds</small></button><button class="solar-btn-orange" style="opacity:.6" onclick="switchPage('withdraw')">↑ Withdraw</button></div>
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:12px">↓ Deposit Funds</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px">
-     <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8">
-      <div>✅ Send funds to the account below.</div>
-      <div>✅ Fill in the form and upload payment proof.</div>
-      <div>✅ Your balance will be updated after approval.</div>
-     </div>
-    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:12px">↓ Deposit Funds • PSO Shell Official</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Send funds to the PSO/Shell official account below.</div><div>✅ Fill in the form and upload payment proof.</div><div>✅ Your balance will be updated after admin approval.</div></div></div>
     <div style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">📱 Select Payment Method</div>
-    <select id="depMethod" class="input-dark" style="margin-bottom:10px"><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
-    <div class="input-dark" style="margin-bottom:12px;display:flex;gap:6px;align-items:center"><span style="color:rgba(255,255,255,.5)">Account:</span><span style="color:#f59e0b;font-weight:700">PK47TMFB0000000079202804</span></div>
+    <select id="depMethod" class="input-dark" style="margin-bottom:10px"><option>JazzCash (03134823393 Official)</option><option>Easypaisa</option><option>Bank (PSO Official)</option></select>
+    <div class="input-dark" style="margin-bottom:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="color:rgba(255,255,255,.5)">Account:</span><span style="color:#f59e0b;font-weight:700">03134823393 • Diamond Petrol PSO Official</span></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
-    <input id="depAmount" type="number" placeholder="Enter amount" class="input-dark" style="margin-bottom:12px">
-    <div style="font-size:12px;margin-bottom:6px">👤 Sender Name</div>
-    <input id="depName" type="text" placeholder="Your Easypaisa/JazzCash name" class="input-dark" style="margin-bottom:12px">
+    <input id="depAmount" type="number" placeholder="Enter amount (Min 3000)" class="input-dark" style="margin-bottom:12px">
+    <div style="font-size:12px;margin-bottom:6px">👤 Sender Name (Full Legal as per CNIC)</div>
+    <input id="depName" type="text" placeholder="Your JazzCash/Easypaisa name" class="input-dark" style="margin-bottom:12px">
     <div style="font-size:12px;margin-bottom:6px">🖼️ Payment Screenshot</div>
     <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;background:#0d1023"><div style="font-size:20px">⤴️</div><div style="font-size:13px;margin-top:4px">Choose image...</div><input type="file" accept="image/*" style="opacity:0;position:absolute"></div>
-    <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit</button>
-    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">🕒 Pending approval</div>
+    <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
+    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">🕒 Pending approval • 5-30 mins • PSO Shell Official</div>
    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
  }else if(currentPage==='withdraw'){
+  const canWithdraw=kycStatus==='approved';
   c.innerHTML=`
-   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Solar Wallet</div>
+   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Diamond Wallet</div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"><button class="solar-btn-green" style="opacity:.6" onclick="switchPage('deposit')">↓ Deposit</button><button class="solar-btn-orange">↑ Withdraw</button></div>
-   <div class="solar-card">
-    <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px">
-     <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8">
-      <div>✅ Withdrawals are processed <b style="color:#fff">anytime</b>.</div>
-      <div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div>
-      <div>✅ 5% fee applies. Min 500 RS.</div>
-     </div>
-    </div>
-    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Processing: 2-3 hours max • Any time withdraw</div></div></div>
+   ${!canWithdraw?`<div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:700;color:#fca5a5;font-size:13px">🔒 KYC Required for Withdraw</div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Withdraw KYC ke bagair nahi hoga. Profile > KYC me CNIC, Full Legal Name submit karen. Admin 24h me approve karega. Jab tak KYC approved nahi, withdraw blocked hai.</div><button onclick="switchPage('profile')" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:#f59e0b;color:#000;border:none;font-weight:700;font-size:11px">Go to KYC • Submit CNIC</button></div>`:''}
+   <div class="solar-card" style="${!canWithdraw?'opacity:.6;pointer-events:none':''}">
+    <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds • KYC ${canWithdraw?'Approved ✅':'Required 🔒'}</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ 5% fee applies. Min 500 RS. KYC approved required.</div></div></div>
+    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Processing: 2-3 hours max • Any time withdraw • KYC: ${kycStatus.toUpperCase()}</div></div></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Available Balance</span><b style="color:#fff">RS ${bal.toFixed(2)}</b></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Withdrawal Fee (5%)</span><b style="color:#fff" id="wdFee">RS 0.00</b></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
-    <input id="wdAmount" type="number" placeholder="Min 3000 • Max 50000" class="input-dark" style="margin-bottom:12px">
+    <input id="wdAmount" type="number" placeholder="Min 3000 • Max 50000" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <div style="font-size:12px;margin-bottom:6px">💳 Account Type</div>
-    <select id="wdMethod" class="input-dark" style="margin-bottom:12px"><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
-    <div style="font-size:12px;margin-bottom:6px">📞 Account Number / IBAN</div>
-    <input id="wdAccount" type="tel" placeholder="Enter account number" class="input-dark" style="margin-bottom:12px">
-    <button onclick="submitWithdraw()" class="solar-btn-orange">✈️ Submit Withdraw</button>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 3000 RS • Max 50000 RS • 5% fee deducted.</div>
+    <select id="wdMethod" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
+    <div style="font-size:12px;margin-bottom:6px">📞 Account Number / IBAN (Must match KYC CNIC name)</div>
+    <input id="wdAccount" type="tel" placeholder="Enter account number" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
+    <button onclick="submitWithdraw()" class="solar-btn-orange" ${!canWithdraw?'disabled style="opacity:.5;cursor:not-allowed"':''}>✈️ Submit Withdraw ${!canWithdraw?'• KYC Required':''}</button>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 3000 RS • Max 50000 RS • 5% fee deducted • KYC approved required • Account must match CNIC name</div>
    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
@@ -410,41 +401,18 @@ function renderApp(){
      ${tx.length===0?`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No transactions found</div></div>`:tx.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('')}
     </div>
    </div>
-   <div class="solar-card" style="margin-top:12px;background:linear-gradient(135deg,#1a1a1a,#232323)">
-    <div style="display:flex;align-items:center;gap:6px;color:#f59e0b;font-weight:700;margin-bottom:10px">📈 History Guide</div>
-    <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
-     <div>↑ <b style="color:#fff">Income</b> — deposits, solar income, referral commissions.</div>
-     <div>↓ <b style="color:#fff">Spent</b> — Solar investments & withdrawals.</div>
-     <div>🔽 Use filters to view specific transaction types.</div>
-     <div>🕒 Status: Pending / Approved / Rejected</div>
-    </div>
-   </div>
   `;
  }else if(currentPage==='team'){
   c.innerHTML=`
-   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">👥 Solar Referral Team</div>
-   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Share your referral code and earn commissions</div>
+   <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">👥 Diamond Petrol Referral Team</div>
+   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Share your referral code and earn commissions • PSO Shell Official</div>
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px">🎁 Your Solar Referral Link</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:10px">Share your referral code and earn <span style="color:#34d399">10% (L1), 5% (L2), 2% (L3)</span> on every investment made by your referrals!</div>
+    <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px">🎁 Your Diamond Petrol Referral Link</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:10px">Share your referral code and earn <span style="color:#34d399">10% (L1), 5% (L2), 2% (L3)</span> on every investment made by your referrals! PSO & Shell official!</div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:#0d1023;border:1px dashed rgba(245,158,11,.3);margin-bottom:10px"><span style="font-size:18px;font-weight:800;letter-spacing:1px;color:#f59e0b">${currentUser.referralCode}</span><button onclick="navigator.clipboard.writeText('${currentUser.referralCode}');toast('Copied','ok')" style="width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,.15);border:none;color:#f59e0b;font-size:16px">⎘</button></div>
-    <button onclick="navigator.clipboard.writeText('https://solarincome.netlify.app?ref=${currentUser.referralCode}');toast('Link copied','ok')" style="width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">🔗 Share Your Referral Link</button>
+    <button onclick="navigator.clipboard.writeText('https://diamondpetrol.netlify.app?ref=${currentUser.referralCode}');toast('Link copied','ok')" style="width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">🔗 Share Your Referral Link</button>
     <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Total Referrals</span><b style="color:#f59e0b">${currentUser.referralsCount||0}</b></div>
     <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Earnings</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
-   </div>
-   <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px"><div style="display:flex;align-items:center;gap:8px;font-weight:700">👥 My Team (Downline)</div><span style="font-size:11px;color:rgba(255,255,255,.4)">${currentUser.referralsCount||0} members</span></div>
-   <div class="solar-card" style="text-align:center;padding:30px 16px">
-    <div style="font-size:40px;opacity:.2">👤+</div>
-    <div style="margin-top:10px;color:rgba(255,255,255,.4);font-size:13px">No team members yet. Share your referral code!</div>
-   </div>
-   <div class="solar-card" style="margin-top:12px;background:linear-gradient(135deg,#1a1a1a,#232323)">
-    <div style="display:flex;align-items:center;gap:6px;color:#f59e0b;font-weight:700;margin-bottom:10px">🎓 Referral Program Guide</div>
-    <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
-     <div><span style="color:#f59e0b;font-weight:700">1</span> Share your solar referral code with friends.</div>
-     <div><span style="color:#f59e0b;font-weight:700">2</span> When they invest, you earn <b style="color:#fff">10% (L1), 5% (L2), 2% (L3)</b> instantly.</div>
-     <div><span style="color:#f59e0b;font-weight:700">3</span> Commissions are added to your balance & shown in history.</div>
-     <div><span style="color:#f59e0b;font-weight:700">4</span> Build your team & increase your earnings!</div>
-    </div>
    </div>
   `;
  }else if(currentPage==='profile'){
@@ -453,30 +421,74 @@ function renderApp(){
     <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;font-size:28px;font-weight:800;color:#000;margin:0 auto">${(currentUser.fullName||'M')[0].toUpperCase()}</div>
     <div style="margin-top:10px;font-weight:700">${currentUser.fullName}</div>
     <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">${currentUser.phone} • ${currentUser.referralCode}</div>
+    <div style="margin-top:10px;display:flex;justify-content:center;gap:8px"><span class="kyc-badge ${kycStatus==='approved'?'approved':kycStatus==='pending'?'pending':'not'}">KYC: ${kycStatus.toUpperCase().replace('_',' ')}</span><span class="kyc-badge not">Balance: RS ${bal.toFixed(2)}</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px">
      <div style="background:#0d1023;border-radius:10px;padding:10px"><div style="font-size:10px;color:rgba(255,255,255,.4)">Balance</div><div style="font-weight:700;font-size:12px">RS ${bal.toFixed(2)}</div></div>
      <div style="background:#0d1023;border-radius:10px;padding:10px"><div style="font-size:10px;color:rgba(255,255,255,.4)">Invested</div><div style="font-weight:700;font-size:12px">RS ${totalDep}</div></div>
      <div style="background:#0d1023;border-radius:10px;padding:10px"><div style="font-size:10px;color:rgba(255,255,255,.4)">Team</div><div style="font-weight:700;font-size:12px">${currentUser.referralsCount||0}</div></div>
     </div>
-    <button onclick="logout()" style="margin-top:16px;width:100%;padding:10px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:#f87171;font-weight:600">Logout</button>
+   </div>
+
+   <div class="solar-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="display:flex;align-items:center;gap:6px;font-weight:700">🪪 KYC Verification • CNIC Required</div><span class="kyc-badge ${kycStatus==='approved'?'approved':kycStatus==='pending'?'pending':'not'}">${kycStatus==='approved'?'✓ APPROVED':kycStatus==='pending'?'⏳ PENDING':'○ NOT SUBMITTED'}</span></div>
+    ${kycStatus==='approved'?`<div style="padding:12px;border-radius:10px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);font-size:12px;color:#86efac">✅ KYC Approved • Full Legal Name: ${currentUser.kycData?.legalName||currentUser.fullName} • CNIC: ${currentUser.kycData?.cnic||'****'} • You can now withdraw. Withdraw KYC ke bagair nahi hota, ab approved hai to withdraw kar sakte ho.</div>`:`
+     <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:12px;line-height:1.5">Withdraw ke liye KYC lazmi hai! CNIC, Full Legal Name (as per CNIC) submit karen. Admin 24h me approve karega. Jab tak approved nahi, withdraw blocked rahega. Fake reviews end pe hain, ye real KYC hai.</div>
+     <div style="display:grid;gap:10px">
+      <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Full Legal Name (As per CNIC) *</div><input id="kycLegalName" type="text" placeholder="Muhammad Adil Aziz (As per CNIC)" value="${currentUser.kycData?.legalName||currentUser.fullName||''}" class="input-dark"></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">CNIC Number (35201-1234567-1) *</div><input id="kycCnic" type="text" placeholder="35201-1234567-1" value="${currentUser.kycData?.cnic||''}" class="input-dark" maxlength="15"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Date of Birth</div><input id="kycDob" type="date" value="${currentUser.kycData?.dob||''}" class="input-dark"></div>
+       <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Father Name (As per CNIC)</div><input id="kycFather" type="text" placeholder="Father Name" value="${currentUser.kycData?.father||''}" class="input-dark"></div>
+      </div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Complete Address (As per CNIC)</div><input id="kycAddr" type="text" placeholder="House, Street, City, District" value="${currentUser.kycData?.addr||''}" class="input-dark"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+       <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">📄</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">CNIC Front Side *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
+       <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">📄</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">CNIC Back Side *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
+      </div>
+      <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px">🤳</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">Selfie with CNIC (Holding CNIC) *</div><input type="file" accept="image/*" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.4);width:100%"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.6)"><input type="checkbox" id="kycAgree" style="accent-color:#f59e0b"> <label for="kycAgree">I confirm Full Legal Name and CNIC are correct as per my CNIC and I am 18+ years old.</label></div>
+      <button onclick="submitKyc()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:800;font-size:13px">Submit KYC • CNIC Verification • PSO Shell Official</button>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;line-height:1.4">KYC data encrypted in Firebase • Admin reviews 24h • Withdraw tab will unlock after approval • Full Legal Name + CNIC mandatory</div>
+     </div>
+    `}
+   </div>
+
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <button onclick="switchPage('team')" style="padding:10px;border-radius:10px;background:#151a33;border:1px solid rgba(255,255,255,.06);color:#fff;font-size:11px">👥 My Team</button>
+    <button onclick="logout()" style="padding:10px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:#f87171;font-size:11px;font-weight:600">Logout</button>
+   </div>
+
+   <div class="solar-card">
+    <div style="font-size:11px;color:rgba(255,255,255,.4)">User ID: ${currentUser.id||''} • Joined: ${currentUser.createdAt?new Date(currentUser.createdAt).toLocaleDateString():''} • Ref: ${currentUser.referralCode} • PSO Shell Official • Diamond Petrol • Bottom Nav Fixed • KYC Added</div>
    </div>
   `;
  }
 }
 function calcWd(){const a=Number(document.getElementById('wdAmount')?.value||0);const fee=Math.ceil(a*0.05);const rec=a-fee;const f=document.getElementById('wdFee');const r=document.getElementById('wdReceive');if(f)f.textContent='RS '+fee.toFixed(2);if(r)r.textContent='RS '+rec.toFixed(2);}
 function filterHistory(type,btn){document.querySelectorAll('.history-tab').forEach(b=>{b.style.background='transparent';b.style.color='#f59e0b';b.style.border='1px solid rgba(245,158,11,.3)'});btn.style.background='#f59e0b';btn.style.color='#000';btn.style.border='none';const list=document.getElementById('historyList');const tx=(currentUser.transactions||[]);let filtered=tx;if(type!=='all')filtered=tx.filter(t=>t.type===type||(type==='profit'&&(t.type==='profit'||t.type==='daily'))||(type==='referral'&&t.type==='referral'));if(filtered.length===0){list.innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No ${type} transactions found</div></div>`;}else{list.innerHTML=filtered.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');}}
-async function investPlan(a,n,d){if(isProcessing)return;if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance,'err');return;}if(!confirm('Invest RS '+a+' in '+n+'? Daily RS '+d))return;isProcessing=true;try{const nb=currentUser.balance-a;const ni=(currentUser.totalDeposit||0)+a;const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now()-60000,totalClaimed:0,daysCompleted:0,status:'active'}];const tx={type:'invest',amount:a,desc:'Invest '+n, date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Invested RS '+a+' in '+n,'ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
-async function claimOne(id){if(isProcessing)return;const inv=currentUser.activeInvests.find(i=>i.id===id);if(!inv)return;isProcessing=true;try{const p=inv.daily||0;const nb=currentUser.balance+p;const ne=(currentUser.totalEarning||0)+p;const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName, date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Claimed RS '+p,'ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
-function submitDeposit(){const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;if(!a||!n){toast('Fill amount and name','err');return;}if(Number(a)<500){toast('Min 500','err');return;}const tx={type:'deposit',amount:Number(a),desc:'Deposit via '+ (document.getElementById('depMethod')?.value||'Easypaisa')+' - Pending', date:new Date().toISOString(),status:'pending'};db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)}).then(()=>{currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Deposit RS '+a+' submitted • Pending approval','ok');switchPage('history');}).catch(e=>toast(e.message,'err'));}
+async function investPlan(a,n,d){if(isProcessing)return;if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance,'err');return;}if(!confirm('Invest RS '+a+' in '+n+'? Daily RS '+d+' • PSO/Shell Official'))return;isProcessing=true;try{const nb=currentUser.balance-a;const ni=(currentUser.totalDeposit||0)+a;const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now()-60000,totalClaimed:0,daysCompleted:0,status:'active'}];const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Invested RS '+a+' in '+n+' ('+planCompany+')','ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
+async function claimOne(id){if(isProcessing)return;const inv=currentUser.activeInvests.find(i=>i.id===id);if(!inv)return;isProcessing=true;try{const p=inv.daily||0;const nb=currentUser.balance+p;const ne=(currentUser.totalEarning||0)+p;const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+')', date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Claimed RS '+p+' Daily Petrol Income','ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
+function submitDeposit(){const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;if(!a||!n){toast('Fill amount and full legal name','err');return;}if(Number(a)<1000){toast('Min deposit 3000 RS recommended, min 500','err');return;}const tx={type:'deposit',amount:Number(a),desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending'};db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)}).then(()=>{currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Deposit RS '+a+' submitted • Pending approval • PSO Official','ok');switchPage('history');}).catch(e=>toast(e.message,'err'));}
 async function submitWithdraw(){
+ if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved - Withdraw blocked! Go to Profile > KYC','err');switchPage('profile');return;}
  const amount=Number(document.getElementById('wdAmount')?.value||0);const method=document.getElementById('wdMethod')?.value;const acc=document.getElementById('wdAccount')?.value.trim();
  if(!amount||amount<500){toast('Min 500','err');return;}if(amount>currentUser.balance){toast('Insufficient','err');return;}if(!acc||acc.length<8){toast('Account number required','err');return;}
- if(!confirm('Withdraw RS '+amount+' to '+acc+'? Fee 5%'))return;
- try{const fee=Math.ceil(amount*0.05);const receive=amount-fee;const wd={id:Date.now().toString(),amount:amount,fee:fee,receive:receive,method:method,account:acc,status:'pending',date:new Date().toISOString()};const tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending', date:new Date().toISOString(),status:'pending'};const newBal=currentUser.balance-amount;await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Withdraw RS '+amount+' requested • Pending • You get RS '+receive,'ok');renderApp();}catch(e){toast(e.message,'err');}
+ if(!confirm('Withdraw RS '+amount+' to '+acc+'? Fee 5% • Must match CNIC name: '+(currentUser.kycData?.legalName||'')))return;
+ try{const fee=Math.ceil(amount*0.05);const receive=amount-fee;const tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending - KYC: '+(currentUser.kycData?.legalName||'')+' - Fee '+fee, date:new Date().toISOString(),status:'pending'};const newBal=currentUser.balance-amount;await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Withdraw RS '+amount+' requested • Pending • KYC verified • You get RS '+receive,'ok');renderApp();}catch(e){toast(e.message,'err');}
 }
-async function loadCurrent(){const p=localStorage.getItem('diamond_current_glass_v21');if(!p)return;try{const d=await db.collection('users').doc(p).get();if(d.exists){currentUser=d.data();showApp();}}catch(e){}}
+async function submitKyc(){
+ const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value;const father=document.getElementById('kycFather')?.value.trim();const addr=document.getElementById('kycAddr')?.value.trim();const agree=document.getElementById('kycAgree')?.checked;
+ if(!legalName||legalName.length<3){toast('Full Legal Name as per CNIC required','err');return;}if(!cnic||cnic.length<13){toast('CNIC Number required 35201-1234567-1 format','err');return;}if(!dob){toast('DOB required','err');return;}if(!father||father.length<3){toast('Father Name required as per CNIC','err');return;}if(!addr||addr.length<10){toast('Complete Address as per CNIC required','err');return;}if(!agree){toast('Please confirm Full Legal Name and CNIC correct checkbox','err');return;}
+ try{
+  const kycData={legalName:legalName,cnic:cnic,dob:dob,father:father,addr:addr,submittedAt:new Date().toISOString()};
+  await db.collection('users').doc(currentUser.phone).update({kycStatus:'pending',kycData:kycData,fullName:legalName});
+  currentUser.kycStatus='pending';currentUser.kycData=kycData;currentUser.fullName=legalName;
+  toast('KYC Submitted • Full Legal Name: '+legalName+' • CNIC: '+cnic+' • Pending 24h • Admin will approve','ok');renderApp();
+ }catch(e){toast(e.message,'err');}
+}
+async function loadCurrent(){const p=localStorage.getItem('diamond_current_glass_v22');if(!p)return;try{const d=await db.collection('users').doc(p).get();if(d.exists){currentUser=d.data();showApp();}}catch(e){}}
 function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;const fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){currentUser=fb;renderApp();}});}
-function logout(){localStorage.removeItem('diamond_current_glass_v21');if(unsub){unsub();unsub=null;}location.reload();}
+function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
 </script>
 </body>
