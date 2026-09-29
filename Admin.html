@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Panel - Diamond Invest</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+body{margin:0;background:#0a0e1f;color:#fff;font-family:sans-serif;padding:20px}
+.card{background:#151a2f;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;margin-bottom:12px}
+input{width:100%;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;color:#fff;margin:6px 0}
+button{padding:10px 16px;border-radius:999px;border:none;font-weight:bold;cursor:pointer}
+.btn{ background:linear-gradient(90deg,#00d2ff,#7b2ff7); color:#fff; }
+.btn2{ background:#fff; color:#000; }
+.small{font-size:11px;color:rgba(255,255,255,.5)}
+</style>
+</head>
+<body>
+<h2>💎 Diamond Admin - Pakka Hal</h2>
+<p class="small">Yahan se balance change karoge to adiimei.online pe foran update hoga (1-2 sec me). Firebase console se nahi, yahan se karo - 100% kaam karega.</p>
+
+<div class="card">
+<input id="pass" type="password" placeholder="Admin password: diamond123">
+<button class="btn" onclick="login()">Unlock Admin</button>
+<div id="msg" class="small" style="margin-top:8px"></div>
+</div>
+
+<div id="users"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",
+  authDomain: "adiimei-invest.firebaseapp.com",
+  projectId: "adiimei-invest",
+  storageBucket: "adiimei-invest.firebasestorage.app",
+  messagingSenderId: "383621463567",
+  appId: "1:383621463567:web:5993d2528bdb88b7ed7a",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function login(){
+  const p = document.getElementById('pass').value;
+  if(p!=="diamond123"){ document.getElementById('msg').textContent="Wrong password! diamond123"; return; }
+  document.getElementById('msg').textContent="✅ Unlocked - loading users...";
+  loadUsers();
+}
+
+async function loadUsers(){
+  const snap = await db.collection('users').get();
+  const div = document.getElementById('users');
+  div.innerHTML = "";
+  snap.forEach(doc=>{
+    const d = doc.data();
+    const el = document.createElement('div');
+    el.className="card";
+    el.innerHTML = `
+      <div style="font-weight:bold">${d.fullName || 'User'} - ${d.email}</div>
+      <div class="small">ID: ${d.id} | Ref: ${d.referralCode} | KYC: ${d.kycStatus}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <input id="bal_${doc.id}" type="number" value="${d.balance}" style="flex:1">
+        <button class="btn" onclick="updateBal('${doc.id}')">Update Balance</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="kyc_${doc.id}" value="${d.kycStatus}" placeholder="kycStatus">
+        <button class="btn2" onclick="updateKyc('${doc.id}')">Update KYC</button>
+      </div>
+      <div class="small" style="margin-top:6px">Total Invested: Rs ${d.totalInvested || 0} | Earned: Rs ${d.totalEarned || 0}</div>
+    `;
+    div.appendChild(el);
+  });
+  if(snap.empty) div.innerHTML = "<div class='card'>No users yet - pehle adiimei.online pe signup karo</div>";
+}
+
+async function updateBal(email){
+  const newBal = Number(document.getElementById('bal_'+email).value);
+  if(isNaN(newBal)){ alert("Invalid balance"); return; }
+  await db.collection('users').doc(email).update({
+    balance: newBal,
+    lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  alert(`✅ ${email} ka balance Rs ${newBal} kar diya - site pe 2 sec me update hoga!`);
+}
+
+async function updateKyc(email){
+  const newKyc = document.getElementById('kyc_'+email).value;
+  await db.collection('users').doc(email).update({
+    kycStatus: newKyc,
+    lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  alert(`KYC updated to ${newKyc}`);
+}
+</script>
+</body>
+</html>
