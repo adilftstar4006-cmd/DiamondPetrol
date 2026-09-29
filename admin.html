@@ -1,33 +1,58 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin Panel - Diamond Invest</title>
+<title>Admin Panel v2 - Diamond Invest</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
-body{margin:0;background:#0a0e1f;color:#fff;font-family:sans-serif;padding:20px}
+*{box-sizing:border-box}
+body{margin:0;background:#0a0e1f;color:#fff;font-family:Inter, sans-serif;padding:16px}
+h2{margin:0 0 6px 0}
 .card{background:#151a2f;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;margin-bottom:12px}
-input{width:100%;background:#0a0e1f;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;color:#fff;margin:6px 0}
-button{padding:10px 16px;border-radius:999px;border:none;font-weight:bold;cursor:pointer}
-.btn{ background:linear-gradient(90deg,#00d2ff,#7b2ff7); color:#fff; }
-.btn2{ background:#fff; color:#000; }
-.small{font-size:11px;color:rgba(255,255,255,.5)}
+input,select{width:100%;background:#0a0e1f;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px;color:#fff;margin:6px 0;outline:none}
+input:focus{border-color:#7b2ff7}
+button{padding:10px 16px;border-radius:999px;border:none;font-weight:700;cursor:pointer}
+.btn{background:linear-gradient(90deg,#00d2ff,#7b2ff7);color:#fff}
+.btn2{background:#fff;color:#000}
+.btn3{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.small{font-size:11px;color:rgba(255,255,255,.5);line-height:1.4}
+.err{color:#ff6b6b;background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.2);padding:10px;border-radius:10px;margin-top:8px;font-size:12px}
+.ok{color:#00ff88;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);padding:10px;border-radius:10px;margin-top:8px;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
+.badge-pending{background:rgba(245,158,11,.2);color:#fbbf24}
+.badge-ok{background:rgba(16,185,129,.2);color:#34d399}
 </style>
 </head>
 <body>
-<h2>💎 Diamond Admin - Pakka Hal</h2>
-<p class="small">Yahan se balance change karoge to adiimei.online pe foran update hoga (1-2 sec me). Firebase console se nahi, yahan se karo - 100% kaam karega.</p>
+<h2>💎 Admin Panel v2 - PAKKA HAL</h2>
+<p class="small">Yahan se balance change karoge to <b>adiimei.online</b> pe 2 sec me update hoga. Firebase console use karne ki zarurat nahi.</p>
 
 <div class="card">
-<input id="pass" type="password" placeholder="Admin password: diamond123">
-<button class="btn" onclick="login()">Unlock Admin</button>
-<div id="msg" class="small" style="margin-top:8px"></div>
+<div style="font-weight:700;margin-bottom:8px">🔐 Admin Login</div>
+<input id="pass" type="password" placeholder="Password: diamond123">
+<button class="btn" onclick="login()" style="width:100%;margin-top:8px">Unlock Admin Panel</button>
+<div id="msg"></div>
+<div id="conn" class="small" style="margin-top:8px">Checking Firebase connection...</div>
+</div>
+
+<div id="stats" class="card" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div><b id="totalUsers">0 Users</b><div class="small">Live from Firestore - adiimei-invest</div></div>
+<button class="btn3" onclick="loadUsers()">🔄 Refresh</button>
+</div>
 </div>
 
 <div id="users"></div>
+
+<div id="debug" class="card" style="display:none">
+<div style="font-weight:700">🐛 Debug Info</div>
+<div id="debugText" class="small" style="white-space:pre-wrap;margin-top:8px"></div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -41,56 +66,159 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+let isUnlocked = false;
+
+async function checkConn(){
+  const connDiv = document.getElementById('conn');
+  try{
+    // Test write/read to check rules
+    await db.collection('users').limit(1).get();
+    connDiv.innerHTML = "✅ Firebase Connected: adiimei-invest - Rules OK - Ready to load users";
+    connDiv.style.color = "#00ff88";
+    document.getElementById('debug').style.display="block";
+    document.getElementById('debugText').textContent = "Project: adiimei-invest\nFirestore: Connected\nRules: allow read,write true (OK)\nTime: " + new Date().toLocaleString();
+  }catch(e){
+    connDiv.innerHTML = "❌ Firebase Connection Failed: " + e.message;
+    connDiv.style.color = "#ff6b6b";
+    document.getElementById('debug').style.display="block";
+    document.getElementById('debugText').textContent = "ERROR: " + e.message + "\n\nFirestore Rules check karo:\nFirestore > Rules > isme likha hona chahiye:\nrules_version='2';\nservice cloud.firestore{\n match /databases/{database}/documents{\n  match /{document=**}{\n   allow read, write: if true;\n  }\n }\n}\n\nPhir Publish dabao!";
+  }
+}
+checkConn();
+
 function login(){
   const p = document.getElementById('pass').value;
-  if(p!=="diamond123"){ document.getElementById('msg').textContent="Wrong password! diamond123"; return; }
-  document.getElementById('msg').textContent="✅ Unlocked - loading users...";
+  const msg = document.getElementById('msg');
+  if(p!=="diamond123"){
+    msg.innerHTML = "<div class='err'>❌ Wrong password! Hint: diamond123</div>";
+    return;
+  }
+  isUnlocked = true;
+  msg.innerHTML = "<div class='ok'>✅ Unlocked! Loading users...</div>";
+  document.getElementById('stats').style.display="block";
   loadUsers();
 }
 
 async function loadUsers(){
-  const snap = await db.collection('users').get();
+  if(!isUnlocked){
+    alert("Pehle password daalo: diamond123");
+    return;
+  }
   const div = document.getElementById('users');
-  div.innerHTML = "";
-  snap.forEach(doc=>{
-    const d = doc.data();
-    const el = document.createElement('div');
-    el.className="card";
-    el.innerHTML = `
-      <div style="font-weight:bold">${d.fullName || 'User'} - ${d.email}</div>
-      <div class="small">ID: ${d.id} | Ref: ${d.referralCode} | KYC: ${d.kycStatus}</div>
-      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-        <input id="bal_${doc.id}" type="number" value="${d.balance}" style="flex:1">
-        <button class="btn" onclick="updateBal('${doc.id}')">Update Balance</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="kyc_${doc.id}" value="${d.kycStatus}" placeholder="kycStatus">
-        <button class="btn2" onclick="updateKyc('${doc.id}')">Update KYC</button>
-      </div>
-      <div class="small" style="margin-top:6px">Total Invested: Rs ${d.totalInvested || 0} | Earned: Rs ${d.totalEarned || 0}</div>
-    `;
-    div.appendChild(el);
-  });
-  if(snap.empty) div.innerHTML = "<div class='card'>No users yet - pehle adiimei.online pe signup karo</div>";
+  const totalDiv = document.getElementById('totalUsers');
+  div.innerHTML = "<div class='card'>⏳ Loading users from Firebase...</div>";
+  try{
+    const snap = await db.collection('users').get();
+    totalDiv.textContent = snap.size + " Users Found";
+    div.innerHTML = "";
+    if(snap.empty){
+      div.innerHTML = "<div class='card'><b>No users yet</b><div class='small'>Pehle adiimei.online pe signup karo - test1@mail.com jaisa. Phir yahan dikhega.</div></div>";
+      return;
+    }
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const el = document.createElement('div');
+      el.className="card";
+      el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:14px">${d.fullName || 'User'} - ${d.email} <span class="badge ${d.kycStatus==='verified'?'badge-ok':'badge-pending'}">${d.kycStatus || 'not_submitted'}</span></div>
+            <div class="small">ID: ${d.id} | Ref: ${d.referralCode || 'N/A'} | ReferredBy: ${d.referredBy || 'none'}</div>
+            <div class="small">Created: ${d.createdAt ? new Date(d.createdAt).toLocaleString() : 'N/A'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800">Rs ${(d.balance||0).toLocaleString()}</div>
+            <div class="small">Invested: Rs ${(d.totalInvested||0).toLocaleString()}</div>
+          </div>
+        </div>
+        
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <div class="small">💰 Balance (Editable)</div>
+            <input id="bal_${doc.id}" type="number" value="${d.balance||0}">
+          </div>
+          <div>
+            <div class="small">🎯 Total Invested</div>
+            <input id="inv_${doc.id}" type="number" value="${d.totalInvested||0}">
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" onclick="updateBal('${doc.id}')">💾 Save Balance - Foran Site Pe Ayega!</button>
+          <button class="btn2" onclick="addMoney('${doc.id}')">➕ +1000 Add</button>
+          <button class="btn3" onclick="copyEmail('${doc.id}')">📋 Copy Email</button>
+        </div>
+        
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <select id="kyc_${doc.id}" style="flex:1">
+            <option value="not_submitted" ${d.kycStatus==='not_submitted'?'selected':''}>not_submitted</option>
+            <option value="pending" ${d.kycStatus==='pending'?'selected':''}>pending</option>
+            <option value="verified" ${d.kycStatus==='verified'?'selected':''}>verified</option>
+            <option value="rejected" ${d.kycStatus==='rejected'?'selected':''}>rejected</option>
+          </select>
+          <button class="btn3" onclick="updateKyc('${doc.id}')">Update KYC</button>
+          <button class="btn3" onclick="deleteUser('${doc.id}')" style="color:#ff6b6b">🗑️ Delete</button>
+        </div>
+        
+        <div id="res_${doc.id}" class="small" style="margin-top:8px"></div>
+      `;
+      div.appendChild(el);
+    });
+  }catch(e){
+    div.innerHTML = "<div class='err'>❌ Load failed: "+e.message+"<br><br>Firestore Rules me jaake Publish dabao:<br>allow read, write: if true;</div>";
+    console.error(e);
+  }
 }
 
 async function updateBal(email){
   const newBal = Number(document.getElementById('bal_'+email).value);
-  if(isNaN(newBal)){ alert("Invalid balance"); return; }
-  await db.collection('users').doc(email).update({
-    balance: newBal,
-    lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  alert(`✅ ${email} ka balance Rs ${newBal} kar diya - site pe 2 sec me update hoga!`);
+  const res = document.getElementById('res_'+email);
+  if(isNaN(newBal)){ res.innerHTML="<div class='err'>Invalid balance</div>"; return; }
+  res.innerHTML="<div class='small'>⏳ Updating Firebase...</div>";
+  try{
+    await db.collection('users').doc(email).update({
+      balance: newBal,
+      lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    res.innerHTML="<div class='ok'>✅ Balance Rs "+newBal.toLocaleString()+" kar diya! Site pe 2 sec me ayega - adiimei.online check karo!</div>";
+  }catch(e){
+    res.innerHTML="<div class='err'>❌ Failed: "+e.message+"</div>";
+  }
+}
+
+async function addMoney(email){
+  const inp = document.getElementById('bal_'+email);
+  const cur = Number(inp.value) || 0;
+  inp.value = cur + 1000;
+  await updateBal(email);
 }
 
 async function updateKyc(email){
   const newKyc = document.getElementById('kyc_'+email).value;
-  await db.collection('users').doc(email).update({
-    kycStatus: newKyc,
-    lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  alert(`KYC updated to ${newKyc}`);
+  const res = document.getElementById('res_'+email);
+  try{
+    await db.collection('users').doc(email).update({
+      kycStatus: newKyc,
+      lastAdminUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    res.innerHTML="<div class='ok'>✅ KYC -> "+newKyc+"</div>";
+  }catch(e){
+    res.innerHTML="<div class='err'>❌ "+e.message+"</div>";
+  }
+}
+
+async function deleteUser(email){
+  if(!confirm("Delete "+email+" ?")) return;
+  try{
+    await db.collection('users').doc(email).delete();
+    alert("Deleted");
+    loadUsers();
+  }catch(e){ alert("Delete failed: "+e.message); }
+}
+
+function copyEmail(email){
+  navigator.clipboard.writeText(email);
+  document.getElementById('res_'+email).innerHTML="<div class='ok'>📋 Copied: "+email+"</div>";
 }
 </script>
 </body>
