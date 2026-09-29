@@ -23,92 +23,138 @@ let db = null;
 try {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
-  console.log("✅ Firebase Connected for adiimei.online");
+  console.log("✅ Firebase Connected - TWO WAY SYNC for adiimei.online");
 } catch(e) { console.error(e); }
 
-async function syncToFirebaseFixed() {
+// 1. LOCAL -> FIREBASE (jo pehle tha)
+async function syncToFirebase() {
   if(!db) return;
   try {
-    // Correct keys from app
     const usersRaw = localStorage.getItem('diamond_users_v4') || localStorage.getItem('diamond_users_v3') || '[]';
-    const currentRaw = localStorage.getItem('diamond_current_v4') || localStorage.getItem('diamond_current_v3') || 'null';
-    const depositsRaw = localStorage.getItem('diamond_deposits_v4') || localStorage.getItem('diamond_deposits_v3') || '[]';
-    
+    const depositsRaw = localStorage.getItem('diamond_deposits_v4') || '[]';
     const users = JSON.parse(usersRaw);
     const deposits = JSON.parse(depositsRaw);
-    const currentEmail = JSON.parse(currentRaw);
     
-    // Find current user object
-    let currentUser = null;
-    if(currentEmail) {
-      currentUser = users.find(u => u.id === currentEmail || u.email === currentEmail);
-    }
-    
-    console.log(`📊 Found: ${users.length} users, ${deposits.length} deposits, current: ${currentEmail}`);
-    
-    // Sync ALL users
     if(users.length > 0) {
       for(let u of users) {
-        await db.collection('users').doc(u.email || u.id).set({
+        if(!u.email) continue;
+        await db.collection('users').doc(u.email).set({
           id: u.id || '',
           fullName: u.fullName || u.name || 'User',
           email: u.email || '',
-          password: u.password || '', // for admin view
-          balance: u.balance || u.wallet || 0,
+          password: u.password || '',
+          balance: u.balance || 0,
           totalEarned: u.totalEarned || 0,
-          totalInvested: u.totalInvested || 0,
-          referralCode: u.referralCode || u.refCode || '',
+          totalInvested: u.totalInvested || u.totalDeposit || 0,
+          referralCode: u.referralCode || '',
           referredBy: u.referredBy || '',
           referralsCount: u.referralsCount || 0,
           activeInvests: u.activeInvests || [],
           transactions: u.transactions || [],
-          kycStatus: u.kycStatus || 'pending',
+          kycStatus: u.kycStatus || 'not_submitted',
           isActive: u.isActive !== false,
           createdAt: u.createdAt || new Date().toISOString(),
           lastSync: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
       }
-      console.log("✅ Users synced to Firebase");
     }
-    
-    // Sync deposits
     if(deposits.length > 0) {
       for(let d of deposits) {
         await db.collection('deposits').doc(d.id || `${d.email}_${d.date || Date.now()}`).set({
-          id: d.id || '',
-          email: d.email || d.userEmail || '',
-          fullName: d.fullName || '',
-          amount: d.amount || 0,
-          method: d.method || 'easypaisa',
-          transactionId: d.transactionId || d.trxId || '',
-          screenshot: d.screenshot || '',
-          status: d.status || 'pending',
-          date: d.date || d.createdAt || new Date().toISOString(),
+          ...d,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
       }
-      console.log("✅ Deposits synced");
     }
+  } catch(err) { console.error("Upload error:", err); }
+}
+
+// 2. FIREBASE -> LOCAL (NAYA - ADMIN CHANGE WAPAS SITE PE AYEGA)
+async function syncFromFirebase() {
+  if(!db) return;
+  try {
+    const currentRaw = localStorage.getItem('diamond_current_v4') || localStorage.getItem('diamond_current_v3') || 'null';
+    let currentId = null;
+    try { currentId = JSON.parse(currentRaw); } catch(e) {}
+    if(!currentId) return;
+
+    const usersRaw = localStorage.getItem('diamond_users_v4') || '[]';
+    let localUsers = JSON.parse(usersRaw);
+    let currentLocalUser = localUsers.find(u => u.id === currentId || u.email === currentId);
+    if(!currentLocalUser || !currentLocalUser.email) return;
+
+    // Firebase se latest data lo
+    const doc = await db.collection('users').doc(currentLocalUser.email).get();
+    if(!doc.exists) return;
     
+    const fbData = doc.data();
+    console.log(`🔄 Firebase se data mila: Balance Rs ${fbData.balance}`);
+
+    // Check agar Firebase ka data naya hai (balance alag hai)
+    if(fbData.balance !== currentLocalUser.balance || fbData.kycStatus !== currentLocalUser.kycStatus || fbData.isActive !== currentLocalUser.isActive) {
+      console.log(`⚡ Admin ne change kiya! Local: Rs ${currentLocalUser.balance} -> Firebase: Rs ${fbData.balance}`);
+      
+      // Local storage update karo
+      localUsers = localUsers.map(u => {
+        if(u.email === fbData.email) {
+          return {
+            ...u,
+            balance: fbData.balance,
+            totalEarned: fbData.totalEarned ?? u.totalEarned,
+            totalInvested: fbData.totalInvested ?? u.totalInvested,
+            kycStatus: fbData.kycStatus ?? u.kycStatus,
+            isActive: fbData.isActive ?? u.isActive,
+            referralCode: fbData.referralCode ?? u.referralCode,
+            referralsCount: fbData.referralsCount ?? u.referralsCount
+          };
+        }
+        return u;
+      });
+      
+      localStorage.setItem('diamond_users_v4', JSON.stringify(localUsers));
+      
+      // Page reload taake naya balance dikhe - ya custom event trigger
+      // Foran dikhane ke liye reload nahi, balki event dispatch
+      window.dispatchEvent(new Event('firebaseBalanceUpdated'));
+      
+      // Agar balance badha hai to toast dikhao
+      if(fbData.balance > currentLocalUser.balance) {
+        const diff = fbData.balance - currentLocalUser.balance;
+        // Simple alert div
+        let toast = document.createElement('div');
+        toast.textContent = `💰 Admin ne Rs ${diff} add kiye! New Balance: Rs ${fbData.balance}`;
+        toast.style.cssText = 'position:fixed;bottom:95px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(135deg,#00d2ff,#7b2ff7);color:white;padding:12px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+        setTimeout(() => location.reload(), 1500); // 1.5 sec baad reload taake dashboard pe naya balance dikhe
+      } else {
+        // Balance kam hua ya kyc change hua to bhi reload
+        setTimeout(() => location.reload(), 1000);
+      }
+    }
   } catch(err) {
-    console.error("❌ Sync error:", err);
+    console.error("Download error:", err);
   }
 }
 
+// Auto sync dono taraf
 window.addEventListener('load', () => {
-  setTimeout(syncToFirebaseFixed, 1500);
-  setInterval(syncToFirebaseFixed, 4000);
+  setTimeout(syncToFirebase, 1000);
+  setTimeout(syncFromFirebase, 2000);
+  setInterval(syncToFirebase, 5000); // Har 5 sec upload
+  setInterval(syncFromFirebase, 5000); // Har 5 sec download - ADMIN CHANGE CHECK
 });
 
+// Local storage change par upload
 const origSetItem = localStorage.setItem;
 localStorage.setItem = function(k,v) {
   origSetItem.apply(this, arguments);
   if(k && k.includes('diamond_')) {
-    setTimeout(syncToFirebaseFixed, 800);
+    setTimeout(syncToFirebase, 800);
   }
 };
 
-console.log("🔥 Fixed auto-sync for adiimei.online - Keys: diamond_users_v4, diamond_deposits_v4");
+console.log("🔥 TWO-WAY SYNC ON: Firebase <-> adiimei.online har 5 sec");
 </script>
 </head>
 <body>
