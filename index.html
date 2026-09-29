@@ -167,7 +167,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name - adil" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
       <div class="field"><div class="field-row" id="row-signupPhone"><div class="icon">📱</div><input id="signupPhone" type="tel" placeholder="Phone 03313394007" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-signupPhone"></div></div>
       <div class="field"><div class="field-row" id="row-signupPass"><div class="icon">🔒</div><input id="signupPass" type="password" placeholder="Password (min 6)" autocomplete="new-password"><div class="eye" onclick="toggleEye('signupPass',this)">👁️</div></div><div class="field-error" id="err-signupPass"></div></div>
-      <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code (Optional)" autocomplete="off" style="text-transform:uppercase"></div></div>
+      <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code (Working - 10% Bonus)" autocomplete="off" style="text-transform:uppercase"></div></div>
       <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 500</span></button>
       <div class="tabs"><span class="tab" onclick="switchTab('login')">LOGIN</span><span class="tab active">SIGNUP</span></div>
     </div>
@@ -219,18 +219,166 @@ function toggleEye(id,el){const i=document.getElementById(id);if(i.type==='passw
 function setLoading(b,l,txt){const btn=document.getElementById(b);const t=btn.querySelector('.btn-text');if(l){btn.classList.add('loading');btn.disabled=true;isProcessing=true;t.textContent='Please wait...';}else{btn.classList.remove('loading');btn.disabled=false;isProcessing=false;t.textContent=txt;}}
 function switchPage(t){currentPage=t;document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+t)?.classList.add('active');renderApp();}
 
+// ===== REFERRAL SYSTEM WORKING - Signup with referral code =====
 async function doSignup(){
  if(isProcessing)return;clearErrors();
  const name=document.getElementById('signupName').value.trim();const raw=document.getElementById('signupPhone').value.trim();const pass=document.getElementById('signupPass').value;const ref=document.getElementById('signupRef').value.trim().toUpperCase();
  let err=false;if(!name||name.length<3){showFieldError('row-signupName','err-signupName','Name min 3');err=true;}const phone=norm(raw);if(!raw){showFieldError('row-signupPhone','err-signupPhone','Phone required');err=true;}else if(!validPhone(phone)){showFieldError('row-signupPhone','err-signupPhone','Format 03313394007');err=true;}if(!pass||pass.length<6){showFieldError('row-signupPass','err-signupPass','Min 6');err=true;}if(err){toast('Fix errors','err');return;}
  setLoading('signupBtn',true);showMsg('Creating...','ok');
- try{const doc=await db.collection('users').doc(phone).get();if(doc.exists){showMsg('Already exists → Login','err');toast('Already exists','err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');return;}
- const id=Date.now().toString();const code='DIAMOND'+phone.slice(-4)+Math.floor(Math.random()*90+10);
- const nu={id:id,phone:phone,fullName:name,username:name,email:phone+'@diamond.local',password:pass,referralCode:code,referredBy:ref,balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,referralsCount:0,referralEarnings:0,kycStatus:'not_submitted',kycData:null,activeInvests:[],withdrawHistory:[],transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],createdAt:new Date().toISOString()};
- await db.collection('users').doc(phone).set(nu);
- localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;toast('Created + Rs 100','ok');setTimeout(()=>showApp(),800);
+ try{
+  const doc=await db.collection('users').doc(phone).get();if(doc.exists){showMsg('Already exists → Login','err');toast('Already exists','err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');return;}
+  const id=Date.now().toString();const code='DIAMOND'+phone.slice(-4)+Math.floor(Math.random()*90+10);
+  // REFERRAL: Find referrer by code
+  let referredByPhone=null, referredByChain=[], referrerData=null;
+  if(ref && ref.length>=4){
+    try{
+      const refSnap=await db.collection('users').where('referralCode','==',ref).limit(1).get();
+      if(!refSnap.empty){
+        const refDoc=refSnap.docs[0];
+        referrerData=refDoc.data();
+        referredByPhone=refDoc.id; // phone is doc id
+        referredByChain=[referredByPhone];
+        // Build L2 L3 chain
+        if(referrerData.referredByPhone) referredByChain.push(referrerData.referredByPhone);
+        if(referrerData.referredByChain && Array.isArray(referrerData.referredByChain)){
+          for(let p of referrerData.referredByChain){
+            if(!referredByChain.includes(p) && referredByChain.length<3) referredByChain.push(p);
+          }
+        }
+      }else{
+        toast('Referral code not found, signup without referral','err');
+      }
+    }catch(e){console.log('ref search error',e);}
+  }
+  const nu={
+    id:id,phone:phone,fullName:name,username:name,email:phone+'@diamond.local',password:pass,
+    referralCode:code,
+    referredBy:ref||'',
+    referredByPhone:referredByPhone||'',
+    referredByChain:referredByChain||[],
+    balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,
+    referralsCount:0,referralEarnings:0,
+    kycStatus:'not_submitted',kycData:null,activeInvests:[],withdrawHistory:[],
+    transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],
+    createdAt:new Date().toISOString()
+  };
+  await db.collection('users').doc(phone).set(nu);
+  // REFERRAL: Update referrer counts (no reward yet - only on deposit)
+  if(referredByPhone && referrerData){
+    try{
+      await db.collection('users').doc(referredByPhone).update({
+        referralsCount: firebase.firestore.FieldValue.increment(1),
+        referrals: firebase.firestore.FieldValue.arrayUnion(phone)
+      });
+      // Add notification transaction for referrer - joined, no reward yet
+      await db.collection('users').doc(referredByPhone).update({
+        transactions: firebase.firestore.FieldValue.arrayUnion({
+          type:'referral_join',
+          amount:0,
+          desc:`New referral joined: ${name} (${phone}) - No reward yet - Deposit pe 10% milega`,
+          date:new Date().toISOString(),
+          status:'approved',
+          from:phone
+        })
+      });
+    }catch(e){console.log('ref update error',e);}
+  }
+  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;
+  if(referredByPhone){toast('Created + Rs 100 • Referral linked to '+referredByPhone+' • Deposit pe bonus milega','ok');}
+  else{toast('Created + Rs 100','ok');}
+  setTimeout(()=>showApp(),800);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');}
 }
+
+// ===== REFERRAL REWARD SYSTEM - Working =====
+// Deposit pe 10% L1, 5% L2, 2% L3 bonus
+async function distributeDepositBonus(depositAmount, depositorPhone, depositorName){
+  try{
+    const userSnap=await db.collection('users').doc(depositorPhone).get();
+    if(!userSnap.exists) return;
+    const userData=userSnap.data();
+    const chain = [];
+    if(userData.referredByPhone) chain.push(userData.referredByPhone);
+    if(userData.referredByChain && Array.isArray(userData.referredByChain)){
+      for(let p of userData.referredByChain){
+        if(!chain.includes(p) && p!==depositorPhone) chain.push(p);
+      }
+    }
+    // Limit 3 levels
+    const levels = chain.slice(0,3);
+    const rates = [0.10, 0.05, 0.02]; // L1 10%, L2 5%, L3 2%
+    for(let i=0;i<levels.length;i++){
+      const refPhone=levels[i];
+      const rate=rates[i];
+      if(!rate) continue;
+      const bonus=Math.floor(depositAmount*rate);
+      if(bonus<=0) continue;
+      const refSnap=await db.collection('users').doc(refPhone).get();
+      if(!refSnap.exists) continue;
+      const refData=refSnap.data();
+      await db.collection('users').doc(refPhone).update({
+        balance: (refData.balance||0)+bonus,
+        referralEarnings: (refData.referralEarnings||0)+bonus,
+        totalEarning: (refData.totalEarning||0)+bonus,
+        transactions: firebase.firestore.FieldValue.arrayUnion({
+          type:'referral',
+          amount:bonus,
+          desc:`Referral L${i+1} Deposit Bonus: ${depositorName} (${depositorPhone}) deposited RS ${depositAmount} → You got ${rate*100}% = RS ${bonus} | Jitna ziada deposit utna faida`,
+          date:new Date().toISOString(),
+          status:'approved',
+          from:depositorPhone,
+          level:i+1,
+          sourceAmount:depositAmount
+        })
+      });
+      console.log(`Referral L${i+1} deposit bonus ${bonus} to ${refPhone}`);
+    }
+  }catch(e){console.log('deposit bonus error',e);}
+}
+
+// Profit pe bhi referral bonus - Jitna jeety ga utna hisa milega
+// Daily collect pe 10% L1, 5% L2, 2% L3 of profit
+async function distributeProfitBonus(profitAmount, earnerPhone, earnerName, planName){
+  try{
+    const userSnap=await db.collection('users').doc(earnerPhone).get();
+    if(!userSnap.exists) return;
+    const userData=userSnap.data();
+    const chain = [];
+    if(userData.referredByPhone) chain.push(userData.referredByPhone);
+    if(userData.referredByChain && Array.isArray(userData.referredByChain)){
+      for(let p of userData.referredByChain){
+        if(!chain.includes(p) && p!==earnerPhone) chain.push(p);
+      }
+    }
+    const levels = chain.slice(0,3);
+    const rates = [0.10, 0.05, 0.02]; // L1 10% of profit, L2 5%, L3 2%
+    for(let i=0;i<levels.length;i++){
+      const refPhone=levels[i];
+      const rate=rates[i];
+      const bonus=Math.floor(profitAmount*rate);
+      if(bonus<=0) continue;
+      const refSnap=await db.collection('users').doc(refPhone).get();
+      if(!refSnap.exists) continue;
+      const refData=refSnap.data();
+      await db.collection('users').doc(refPhone).update({
+        balance: (refData.balance||0)+bonus,
+        referralEarnings: (refData.referralEarnings||0)+bonus,
+        totalEarning: (refData.totalEarning||0)+bonus,
+        transactions: firebase.firestore.FieldValue.arrayUnion({
+          type:'referral',
+          amount:bonus,
+          desc:`Referral L${i+1} Profit Bonus: ${earnerName} earned RS ${profitAmount} from ${planName} → You got ${rate*100}% = RS ${bonus} | Daily profit sharing`,
+          date:new Date().toISOString(),
+          status:'approved',
+          from:earnerPhone,
+          level:i+1,
+          sourceAmount:profitAmount
+        })
+      });
+    }
+  }catch(e){console.log('profit bonus error',e);}
+}
+
 async function doLogin(){
  if(isProcessing)return;clearErrors();
  const raw=document.getElementById('loginPhone').value.trim();const pass=document.getElementById('loginPass').value;
@@ -493,9 +641,58 @@ function renderApp(){
 }
 function calcWd(){const a=Number(document.getElementById('wdAmount')?.value||0);const fee=Math.ceil(a*0.05);const rec=a-fee;const f=document.getElementById('wdFee');const r=document.getElementById('wdReceive');if(f)f.textContent='RS '+fee.toFixed(2);if(r)r.textContent='RS '+rec.toFixed(2);}
 function filterHistory(type,btn){document.querySelectorAll('.history-tab').forEach(b=>{b.style.background='transparent';b.style.color='#f59e0b';b.style.border='1px solid rgba(245,158,11,.3)'});btn.style.background='#f59e0b';btn.style.color='#000';btn.style.border='none';const list=document.getElementById('historyList');const tx=(currentUser.transactions||[]);let filtered=tx;if(type!=='all')filtered=tx.filter(t=>t.type===type||(type==='profit'&&(t.type==='profit'||t.type==='daily'))||(type==='referral'&&t.type==='referral'));if(filtered.length===0){list.innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No ${type} transactions found</div></div>`;}else{list.innerHTML=filtered.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');}}
-async function investPlan(a,n,d){if(isProcessing)return;if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance,'err');return;}if(!confirm('Invest RS '+a+' in '+n+'? Daily RS '+d+' • PSO/Shell Official'))return;isProcessing=true;try{const nb=currentUser.balance-a;const ni=(currentUser.totalDeposit||0)+a;const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now()-60000,totalClaimed:0,daysCompleted:0,status:'active'}];const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Invested RS '+a+' in '+n+' ('+planCompany+')','ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
-async function claimOne(id){if(isProcessing)return;const inv=currentUser.activeInvests.find(i=>i.id===id);if(!inv)return;isProcessing=true;try{const p=inv.daily||0;const nb=currentUser.balance+p;const ne=(currentUser.totalEarning||0)+p;const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+')', date:new Date().toISOString(),status:'approved'};await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];renderApp();toast('Claimed RS '+p+' Daily Petrol Income','ok');}catch(e){toast(e.message,'err');}finally{isProcessing=false;}}
-function submitDeposit(){const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;if(!a||!n){toast('Fill amount and full legal name','err');return;}if(Number(a)<1000){toast('Min deposit 3000 RS recommended, min 500','err');return;}const tx={type:'deposit',amount:Number(a),desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending'};db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)}).then(()=>{currentUser.transactions=[...(currentUser.transactions||[]),tx];toast('Deposit RS '+a+' submitted • Pending approval • PSO Official','ok');switchPage('history');}).catch(e=>toast(e.message,'err'));}
+async function investPlan(a,n,d){
+  if(isProcessing)return;
+  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance+' - Pehle deposit karo','err');return;}
+  if(!confirm('Invest RS '+a+' in '+n+'? Daily RS '+d+' • PSO/Shell Official • Referrer ko bonus milega'))return;
+  isProcessing=true;
+  try{
+    const nb=currentUser.balance-a;
+    const ni=(currentUser.totalDeposit||0)+a;
+    const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';
+    const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now()-60000,totalClaimed:0,daysCompleted:0,status:'active'}];
+    const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};
+    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
+    currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
+    // REFERRAL: Investment pe bhi bonus - Deposit ka hissa samjho
+    distributeDepositBonus(a, currentUser.phone, currentUser.fullName);
+    renderApp();
+    toast('Invested RS '+a+' in '+n+' ('+planCompany+') • Referrer ko 10% bonus gaya','ok');
+  }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
+}
+async function claimOne(id){
+  if(isProcessing)return;
+  const inv=currentUser.activeInvests.find(i=>i.id===id);
+  if(!inv)return;
+  isProcessing=true;
+  try{
+    const p=inv.daily||0;
+    const nb=currentUser.balance+p;
+    const ne=(currentUser.totalEarning||0)+p;
+    const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);
+    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+')', date:new Date().toISOString(),status:'approved'};
+    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
+    currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
+    // REFERRAL: Jitna jeety ga utna hisa referrer ko bhi milega - L1 10%, L2 5%, L3 2% of profit
+    distributeProfitBonus(p, currentUser.phone, currentUser.fullName, inv.planName);
+    renderApp();
+    toast('Claimed RS '+p+' Daily Petrol Income • Referrer ko '+Math.floor(p*0.10)+' RS bonus gaya','ok');
+  }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
+}
+function submitDeposit(){
+  const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;
+  if(!a||!n){toast('Fill amount and full legal name','err');return;}
+  if(Number(a)<500){toast('Min deposit 500 RS','err');return;}
+  const amt=Number(a);
+  const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending'};
+  db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)}).then(()=>{
+    currentUser.transactions=[...(currentUser.transactions||[]),tx];
+    // REFERRAL: Deposit pe bonus milega - L1 10%, L2 5%, L3 2%
+    distributeDepositBonus(amt, currentUser.phone, currentUser.fullName);
+    toast('Deposit RS '+a+' submitted • Pending approval • PSO Official • Referrer ko 10% bonus milega','ok');
+    switchPage('history');
+  }).catch(e=>toast(e.message,'err'));
+}
 async function submitWithdraw(){
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved - Withdraw blocked! Go to Profile > KYC','err');switchPage('profile');return;}
  const amount=Number(document.getElementById('wdAmount')?.value||0);const method=document.getElementById('wdMethod')?.value;const acc=document.getElementById('wdAccount')?.value.trim();
