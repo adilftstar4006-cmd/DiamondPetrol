@@ -20,11 +20,82 @@ const firebaseConfig = {
 };
 let db=null;
 let unsub=null;
+let lastAdminUpdate=0;
 try{
   firebase.initializeApp(firebaseConfig);
   db=firebase.firestore();
-  console.log("%c✅ PAKKA HAL v7 - FIREBASE IS BOSS","color:#00ff88;font-size:14px;font-weight:bold");
+  console.log("%c✅ v8 MULTI-DEVICE - Firebase BOSS + Login Fix","color:#00ff88;font-weight:bold;font-size:14px");
 }catch(e){console.error(e);}
+
+// MULTI-DEVICE LOGIN FIX - Firebase se user lao agar local me nahi hai
+window.firebaseLogin = async function(email, password){
+  if(!db) return null;
+  try{
+    console.log(`🔍 Firebase me dhoondh raha: ${email}`);
+    const doc = await db.collection('users').doc(email.toLowerCase()).get();
+    if(!doc.exists){
+      console.log(`❌ Firebase me user nahi mila: ${email}`);
+      // Try case-insensitive search - get all and find
+      const snap = await db.collection('users').where('email','==',email).get();
+      if(snap.empty){
+        const snap2 = await db.collection('users').where('email','==',email.toLowerCase()).get();
+        if(snap2.empty) return null;
+        const d = snap2.docs[0].data();
+        if(d.password===password) return d;
+        return null;
+      } else {
+        const d = snap.docs[0].data();
+        if(d.password===password) return d;
+        return null;
+      }
+    }
+    const d = doc.data();
+    if(d.password===password || d.password===undefined){
+      console.log(`✅ Firebase login OK: ${email} - Balance Rs ${d.balance}`);
+      return d;
+    } else {
+      console.log(`❌ Password galat for ${email}`);
+      return null;
+    }
+  }catch(e){
+    console.error("Firebase login error", e);
+    return null;
+  }
+};
+
+// Save Firebase user to localStorage
+window.saveFirebaseUserToLocal = function(fbUser){
+  try{
+    let users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
+    let idx = users.findIndex(u=>u.email.toLowerCase()===fbUser.email.toLowerCase());
+    let localUser = {
+      id: fbUser.id || Date.now().toString(),
+      username: fbUser.fullName || fbUser.username || fbUser.email.split('@')[0],
+      email: fbUser.email,
+      password: fbUser.password || '',
+      referralCode: fbUser.referralCode || 'DIAMOND'+fbUser.email.slice(-4),
+      referredBy: fbUser.referredBy || '',
+      balance: fbUser.balance || 0,
+      totalDeposit: fbUser.totalInvested || fbUser.totalDeposit || 0,
+      totalEarning: fbUser.totalEarned || fbUser.totalEarning || 0,
+      referralsCount: fbUser.referralsCount || 0,
+      referralEarnings: fbUser.referralEarnings || 0,
+      kycStatus: fbUser.kycStatus || 'not_submitted',
+      activeInvests: fbUser.activeInvests || [],
+      isActive: fbUser.isActive !== false,
+      createdAt: fbUser.createdAt || new Date().toISOString()
+    };
+    if(idx>=0){
+      users[idx] = {...users[idx], ...localUser};
+    } else {
+      users.push(localUser);
+    }
+    localStorage.setItem('diamond_users_v4', JSON.stringify(users));
+    localStorage.setItem('diamond_current_v4', JSON.stringify(localUser.id));
+    console.log(`💾 Saved to localStorage: ${localUser.email} - Rs ${localUser.balance}`);
+    return localUser.id;
+  }catch(e){console.error(e); return null;}
+};
 
 function getCurrentEmail(){
   try{
@@ -38,16 +109,13 @@ function getCurrentEmail(){
 }
 
 async function forceSyncFromFirebase(email){
-  if(!db || !email) return;
+  if(!db || !email) return false;
   try{
-    const doc = await db.collection('users').doc(email).get();
-    if(!doc.exists) { console.log("Firebase doc not exist for", email); return; }
+    const doc = await db.collection('users').doc(email.toLowerCase()).get();
+    if(!doc.exists) return false;
     const fb = doc.data();
-    console.log(`🔥 Firebase balance for ${email}: Rs ${fb.balance} (kyc ${fb.kycStatus})`);
-    
-    // OVERWRITE localStorage - NO COMPARISON - FIREBASE WINS
     let users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
-    let idx = users.findIndex(u=>u.email===email);
+    let idx = users.findIndex(u=>u.email.toLowerCase()===email.toLowerCase());
     if(idx>=0){
       users[idx] = {
         ...users[idx],
@@ -62,78 +130,63 @@ async function forceSyncFromFirebase(email){
         activeInvests: fb.activeInvests || users[idx].activeInvests
       };
       localStorage.setItem('diamond_users_v4', JSON.stringify(users));
-      console.log(`✅ Local updated to Rs ${fb.balance} - reloading...`);
+      console.log(`✅ Synced from Firebase: Rs ${fb.balance}`);
       return true;
     }
-  }catch(e){console.error("forceSync error", e);}
+  }catch(e){console.error(e);}
   return false;
 }
 
 function startBossListener(){
   if(!db) return;
   const email = getCurrentEmail();
-  if(!email){
-    console.log("⏳ No login yet, waiting for user to login...");
-    return;
-  }
-  if(unsub){
-    console.log(`👂 Listener already ON for ${email}`);
-    return;
-  }
-  console.log(`%c👂 BOSS LISTENER ON for ${email} - Ab Firebase me jo karoge wahi final hoga!`,"color:#00d2ff;font-weight:bold");
-  
-  unsub = db.collection('users').doc(email).onSnapshot(async (snap)=>{
+  if(!email) return;
+  if(unsub) return;
+  console.log(`👂 BOSS LISTENER ON for ${email}`);
+  unsub = db.collection('users').doc(email.toLowerCase()).onSnapshot((snap)=>{
     if(!snap.exists) return;
     const fb = snap.data();
     let users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
-    let local = users.find(u=>u.email===email);
+    let local = users.find(u=>u.email.toLowerCase()===email.toLowerCase());
     if(!local) return;
-    
-    // Agar same hai to ignore
-    if(local.balance===fb.balance && local.kycStatus===fb.kycStatus) {
-      console.log(`🔄 Firebase check OK - Rs ${fb.balance}`);
-      return;
-    }
-    
-    console.log(`%c⚡⚡ ADMIN NE FIREBASE SE CHANGE KIYA! ${local.balance} -> ${fb.balance}`,"color:yellow;background:#000;font-size:13px;font-weight:bold");
-    
-    // DIRECT OVERWRITE - NO QUESTIONS
+    if(local.balance===fb.balance && local.kycStatus===fb.kycStatus) return;
+    console.log(`⚡ ADMIN CHANGE: ${local.balance} -> ${fb.balance}`);
+    lastAdminUpdate = Date.now();
     users = users.map(u=>{
-      if(u.email===email){
+      if(u.email.toLowerCase()===email.toLowerCase()){
         return {...u, balance: fb.balance, totalEarned: fb.totalEarned ?? u.totalEarned, totalInvested: fb.totalInvested ?? u.totalInvested, totalDeposit: fb.totalInvested ?? u.totalDeposit, kycStatus: fb.kycStatus ?? u.kycStatus, isActive: fb.isActive ?? u.isActive}
       }
       return u;
     });
     localStorage.setItem('diamond_users_v4', JSON.stringify(users));
-    
-    // Notification
-    const diff = fb.balance - local.balance;
     const div = document.createElement('div');
-    div.innerHTML = diff>0 ? `💰 <b>Admin ne Rs ${diff} add kiye!</b><br>New: Rs ${fb.balance}` : `💳 Balance updated: Rs ${fb.balance}`;
+    const diff = fb.balance - local.balance;
+    div.innerHTML = diff>0 ? `💰 Admin ne Rs ${diff} add kiye!<br>New: Rs ${fb.balance}` : `💳 Balance: Rs ${fb.balance}`;
     div.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:999999;background:#000;color:#fff;border:2px solid #00d2ff;padding:16px 24px;border-radius:16px;font-size:14px;text-align:center;box-shadow:0 0 30px #00d2ff;';
     document.body.appendChild(div);
     setTimeout(()=>{ div.remove(); location.reload(); }, 2000);
-    
-  }, (err)=>{ console.error("Listener error - rules check karo!", err); });
+  });
 }
 
-// Upload sirf tab jab user naya banta hai ya invest karta hai - har 5 sec nahi
 async function uploadOnce(){
   if(!db) return;
   const users = JSON.parse(localStorage.getItem('diamond_users_v4') || '[]');
   for(let u of users){
     if(!u.email) continue;
     try{
-      await db.collection('users').doc(u.email).set({
+      await db.collection('users').doc(u.email.toLowerCase()).set({
         id: u.id || '',
-        email: u.email,
-        fullName: u.fullName || u.name || 'User',
+        email: u.email.toLowerCase(),
+        fullName: u.fullName || u.username || 'User',
+        username: u.username || '',
+        password: u.password || '',
         balance: u.balance || 0,
-        totalEarned: u.totalEarned || 0,
+        totalEarned: u.totalEarned || u.totalEarning || 0,
         totalInvested: u.totalInvested || u.totalDeposit || 0,
         referralCode: u.referralCode || '',
         referredBy: u.referredBy || '',
         referralsCount: u.referralsCount || 0,
+        referralEarnings: u.referralEarnings || 0,
         activeInvests: u.activeInvests || [],
         kycStatus: u.kycStatus || 'not_submitted',
         isActive: u.isActive !== false,
@@ -142,39 +195,75 @@ async function uploadOnce(){
       }, {merge:true});
     }catch(e){}
   }
-  console.log(`📤 Uploaded ${users.length} users to Firebase (once)`);
+}
+
+// Patch login after React loads
+function patchLogin(){
+  console.log("🔧 Patching login for multi-device...");
+  // Intercept the login button
+  const origFetch = window.fetch;
+  // Watch for auth error display
+  setInterval(()=>{
+    const errDiv = document.querySelector('[data-testid="auth-error"]');
+    if(errDiv && errDiv.textContent.includes('Invalid')){
+      // If Firebase has user, try Firebase login
+      const emailInput = document.querySelector('input[placeholder="you@gmail.com"]');
+      const passInput = document.querySelector('input[placeholder="••••••••"]');
+      if(emailInput && passInput && emailInput.value && passInput.value){
+        const email = emailInput.value.trim();
+        const pass = passInput.value;
+        if(email && pass && !window._firebaseLoginTrying){
+          window._firebaseLoginTrying = true;
+          console.log(`🔄 Local login failed, trying Firebase for ${email}...`);
+          window.firebaseLogin(email, pass).then(fbUser=>{
+            window._firebaseLoginTrying = false;
+            if(fbUser){
+              console.log(`✅ Firebase login success for ${email}`);
+              const newId = window.saveFirebaseUserToLocal(fbUser);
+              if(newId){
+                errDiv.textContent = "✅ Firebase login OK! Reloading...";
+                errDiv.style.background = "rgba(0,255,136,.15)";
+                errDiv.style.color = "#00ff88";
+                setTimeout(()=>location.reload(), 1000);
+              }
+            } else {
+              console.log(`❌ Firebase also no user for ${email}`);
+            }
+          });
+        }
+      }
+    }
+  }, 1500);
 }
 
 window.addEventListener('load', ()=>{
   setTimeout(uploadOnce, 2000);
   setTimeout(startBossListener, 3000);
-  setInterval(startBossListener, 2000); // Retry har 2 sec
+  setTimeout(patchLogin, 3000);
+  setInterval(startBossListener, 3000);
+  setInterval(uploadOnce, 15000);
 });
 
-// Jab login ho to listener restart
 const _setItem = localStorage.setItem;
 localStorage.setItem = function(k,v){
   _setItem.apply(this, arguments);
   if(k.includes('diamond_current')){
-    console.log("🔑 Login changed - restarting BOSS listener");
     if(unsub){ unsub(); unsub=null; }
-    setTimeout(startBossListener, 1000);
-    // Foran Firebase se balance lo
+    setTimeout(startBossListener, 800);
     setTimeout(async ()=>{
       const email = getCurrentEmail();
-      if(email){
+      if(email) {
         const ok = await forceSyncFromFirebase(email);
-        if(ok) setTimeout(()=>location.reload(), 1500);
+        if(ok) setTimeout(()=>location.reload(), 1200);
       }
-    }, 1500);
+    }, 1200);
   }
-  if(k.includes('diamond_users')){
-    // User ne invest/claim kiya to Firebase pe bhejo
+  if(k.includes('diamond_users') && Date.now() - lastAdminUpdate > 20000){
     setTimeout(uploadOnce, 1000);
   }
 };
 
-console.log("%c🔥 PAKKA HAL v7 LOADED - Firebase = Boss, Local = Slave","color:#ffcc00;font-weight:bold");
+console.log("🔥 v8 MULTI-DEVICE READY - PC signup = Mobile login OK!");
 </script>
 </head>
 <body>
