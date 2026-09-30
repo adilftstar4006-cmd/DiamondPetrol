@@ -975,6 +975,17 @@ function submitDeposit(){
   setTimeout(function(){switchPage('wallet');},100);
   
   const amt=Number(a);
+  // DEDUP CHECK - Agar same amount ka pending already hai last 2 min me, to block karo
+  const now=Date.now();
+  const recentPending=(currentUser.transactions||[]).filter(function(t){
+    return t.type==='deposit' && t.status==='pending' && Number(t.amount)===Number(amt) && (now - new Date(t.date).getTime()) < 120000; // 2 min
+  });
+  if(recentPending.length>0){
+    toast('⚠ RS '+amt+' ka deposit already pending hai • 2 min me double deposit block • Wallet me check karo','err');
+    isDepositSubmitting=false;
+    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
+    return;
+  }
   const depositId=Date.now().toString()+'_'+currentUser.phone;
   const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:document.getElementById('depMethod')?.value||'JazzCash',depositId:depositId,hasScreenshot:true};
   const depDoc={id:depositId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amt,method:document.getElementById('depMethod')?.value||'JazzCash',senderName:n,screenshot:depositScreenshotBase64,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||currentUser.fullName||'',kycCnic:currentUser.kycData?.cnic||''};
@@ -1023,6 +1034,17 @@ async function submitWithdraw(){
  try{
   var fee=Math.ceil(amount*0.05);
   var receive=amount-fee;
+  // DEDUP CHECK for withdraw
+  const nowW=Date.now();
+  const recentPendingW=(currentUser.transactions||[]).filter(function(t){
+    return t.type==='withdraw' && t.status==='pending' && Number(t.amount)===Number(amount) && (nowW - new Date(t.date).getTime()) < 120000;
+  });
+  if(recentPendingW.length>0){
+    toast('⚠ RS '+amount+' ka withdraw already pending hai • 2 min wait karo','err');
+    isWithdrawSubmitting=false;
+    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
+    return;
+  }
   var withdrawId=Date.now().toString()+'_'+currentUser.phone;
   var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending - Fee RS '+fee+' - You receive RS '+receive,date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
   var wdDoc={id:withdrawId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amount,method:method,account:acc,fee:fee,receive:receive,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||''};
