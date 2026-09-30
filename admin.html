@@ -221,29 +221,105 @@ function renderKycPending(){
   if(pend.length===0){div.innerHTML='<div class="empty-state" style="padding:20px;font-size:11px">No KYC pending</div>';return;}
   div.innerHTML=pend.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:#0d1023;border:1px solid rgba(245,158,11,.2);margin-bottom:8px"><div><div style="font-size:12px;font-weight:700">Legal: <span style="color:#f59e0b">${u.kycData?.legalName||u.fullName}</span> • CNIC: <span style="color:#f59e0b">${u.kycData?.cnic||''}</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">${u.phone} • ${u.kycData?.father||''} • ${u.kycData?.addr||''}</div></div><div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="quickApproveKyc('${u.phone}')">✓ Approve</button><button class="btn btn-del" onclick="rejectKyc('${u.phone}')">Reject</button></div></div>`).join('');
 }
+let depositRequestsCache=[], withdrawRequestsCache=[], unsubDeposits=null, unsubWithdraws=null;
+
+function startPendingListeners(){
+  if(unsubDeposits) unsubDeposits();
+  if(unsubWithdraws) unsubWithdraws();
+  unsubDeposits=db.collection('depositRequests').where('status','==','pending').onSnapshot(snap=>{
+    depositRequestsCache=snap.docs.map(d=>d.data());
+    renderPending();
+  });
+  unsubWithdraws=db.collection('withdrawRequests').where('status','==','pending').onSnapshot(snap=>{
+    withdrawRequestsCache=snap.docs.map(d=>d.data());
+    renderPending();
+  });
+}
+
 function renderPending(){
   const div=document.getElementById('pendingList');
-  let pendings=[];allUsers.forEach(u=>{(u.transactions||[]).forEach((t,i)=>{if(t.status==='pending')pendings.push({user:u,tx:t,index:i});});});
-  if(pendings.length===0){div.innerHTML='<div class="empty-state" style="padding:20px;font-size:11px">No pending deposits/withdrawals</div>';return;}
-  div.innerHTML=pendings.slice(0,100).map(p=>`
-    <div style="display:flex;gap:12px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid ${p.tx.type==='deposit'?'rgba(34,197,94,.2)':'rgba(245,158,11,.2)'};margin-bottom:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">${p.tx.type==='deposit'?'💰':'💸'} <b style="color:${p.tx.type==='deposit'?'#22c55e':'#f59e0b'}">${p.tx.type.toUpperCase()} RS ${(p.tx.amount||0).toLocaleString()}</b> • ${p.user.phone}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.5">
-          Legal: <b style="color:#f59e0b">${p.user.kycData?.legalName||p.user.fullName||''}</b> • CNIC: <b style="color:#f59e0b">${p.user.kycData?.cnic||''}</b><br>
-          ${p.tx.desc||''}<br>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">${p.tx.date?new Date(p.tx.date).toLocaleString():''} • Method: ${p.tx.method||''} • Sender: ${p.tx.senderName||''}</span>
-        </div>
-      </div>
-      ${p.tx.screenshot?`<div style="width:120px;flex-shrink:0"><div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:4px">📸 Payment Screenshot - Click to view</div><img src="${p.tx.screenshot}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid rgba(245,158,11,.3);cursor:pointer" onclick="window.open('${p.tx.screenshot}','_blank')"><a href="${p.tx.screenshot}" target="_blank" style="font-size:9px;color:#f59e0b;display:block;text-align:center;margin-top:3px">🔍 View Full Screenshot</a></div>`:''}
-      <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
-        <button class="btn btn-approve" onclick="approveTx('${p.user.phone}',${p.index},${p.tx.amount},'${p.tx.type}')" style="padding:8px 14px">✓ Approve</button>
-        <button class="btn btn-del" onclick="rejectTx('${p.user.phone}',${p.index})" style="padding:8px 14px">✕ Reject</button>
-        ${p.tx.screenshot?`<button class="btn" style="background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.2)" onclick="window.open('${p.tx.screenshot}','_blank')">🖼 View Pic</button>`:''}
-      </div>
-    </div>
-  `).join('');
+  let allPending=[...depositRequestsCache.map(d=>({type:'deposit',data:d})), ...withdrawRequestsCache.map(d=>({type:'withdraw',data:d}))];
+  allPending.sort((a,b)=>new Date(b.data.date)-new Date(a.data.date));
+  if(allPending.length===0){div.innerHTML='<div class="empty-state" style="padding:20px;font-size:11px">✅ No pending • Sab approved<br><small>DepositRequests: '+depositRequestsCache.length+' • WithdrawRequests: '+withdrawRequestsCache.length+'</small></div>';return;}
+  div.innerHTML=allPending.slice(0,100).map(p=>{
+    if(p.type==='deposit'){
+      const d=p.data;
+      return `<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid rgba(34,197,94,.25);margin-bottom:8px;align-items:center;flex-wrap:wrap">
+        <div style="width:50px;height:50px;border-radius:8px;background:rgba(245,158,11,.15);display:grid;place-items:center">⏳<br><small style="font-size:8px">DEPOSIT</small></div>
+        <div style="flex:1;min-width:180px"><div style="font-size:12px;font-weight:700">${d.phone} • RS ${d.amount} • ${d.method} • ${d.senderName}</div><div style="font-size:10px;color:rgba(255,255,255,.5)">${new Date(d.date).toLocaleString()} • ${d.fullName} • KYC: ${d.kycName} • ${d.kycCnic}</div></div>
+        ${d.screenshot?`<img src="${d.screenshot}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #f59e0b;cursor:pointer" onclick="window.open('${d.screenshot}','_blank')"><div style="font-size:9px;color:#f59e0b">Click to view</div>`:''}
+        <div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="approveDeposit('${d.id}','${d.phone}',${d.amount})">Approve Deposit</button><button class="btn btn-del" onclick="rejectDeposit('${d.id}','${d.phone}',${d.amount})">Reject</button></div>
+      </div>`;
+    }else{
+      const d=p.data;
+      return `<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid rgba(96,165,250,.25);margin-bottom:8px;align-items:center;flex-wrap:wrap">
+        <div style="width:50px;height:50px;border-radius:8px;background:rgba(96,165,250,.15);display:grid;place-items:center">💸<br><small style="font-size:8px">WITHDRAW</small></div>
+        <div style="flex:1;min-width:180px"><div style="font-size:12px;font-weight:700">${d.phone} • RS ${d.amount} • ${d.method} ${d.account} • Fee ${d.fee} • Get ${d.receive}</div><div style="font-size:10px;color:rgba(255,255,255,.5)">${new Date(d.date).toLocaleString()} • ${d.fullName} • KYC: ${d.kycName}</div></div>
+        <div style="display:flex;gap:6px"><button class="btn btn-approve" style="background:#60a5fa" onclick="approveWithdraw('${d.id}','${d.phone}',${d.amount})">Approve Withdraw</button><button class="btn btn-del" onclick="rejectWithdraw('${d.id}','${d.phone}',${d.amount})">Reject + Refund</button></div>
+      </div>`;
+    }
+  }).join('');
 }
+
+// New approve functions for new collections
+async function approveDeposit(depositId, phone, amount){
+  if(!confirm('Approve Deposit RS '+amount+' for '+phone+'?'))return;
+  try{
+    const userDoc=await db.collection('users').doc(phone).get();
+    if(!userDoc.exists){alert('User not found');return;}
+    const userData=userDoc.data();
+    const newBal=(userData.balance||0)+amount;
+    const newTotalDep=(userData.totalDeposit||0)+amount;
+    // Update user transactions: find pending deposit with same depositId and mark approved
+    let txs=userData.transactions||[];
+    let updated=false;
+    txs=txs.map(t=>{if(t.depositId===depositId&&t.status==='pending'){updated=true;return {...t,status:'approved',desc:t.desc.replace('Pending','Approved')};}return t;});
+    if(!updated){
+      // If not found by id, find by amount and pending
+      for(let i=0;i<txs.length;i++){if(txs[i].type==='deposit'&&txs[i].status==='pending'&&txs[i].amount===amount){txs[i].status='approved';txs[i].desc=txs[i].desc.replace('Pending','Approved');break;}}
+    }
+    await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
+    await db.collection('depositRequests').doc(depositId).update({status:'approved',approvedAt:new Date().toISOString()});
+    toast('Deposit Approved RS '+amount,'ok');
+  }catch(e){alert(e.message);}
+}
+async function rejectDeposit(depositId, phone, amount){
+  if(!confirm('Reject Deposit RS '+amount+'?'))return;
+  try{
+    const userDoc=await db.collection('users').doc(phone).get();
+    let txs=userDoc.data().transactions||[];
+    txs=txs.map(t=>{if(t.depositId===depositId&&t.status==='pending'){return {...t,status:'rejected',desc:t.desc.replace('Pending','Rejected')};}return t;});
+    await db.collection('users').doc(phone).update({transactions:txs});
+    await db.collection('depositRequests').doc(depositId).update({status:'rejected'});
+    toast('Deposit Rejected','ok');
+  }catch(e){alert(e.message);}
+}
+async function approveWithdraw(withdrawId, phone, amount){
+  if(!confirm('Approve Withdraw RS '+amount+' for '+phone+'? Balance already deducted, just mark approved?'))return;
+  try{
+    const userDoc=await db.collection('users').doc(phone).get();
+    let txs=userDoc.data().transactions||[];
+    txs=txs.map(t=>{if(t.withdrawId===withdrawId&&t.status==='pending'){return {...t,status:'approved',desc:t.desc.replace('Pending','Approved - Sent')};}return t;});
+    await db.collection('users').doc(phone).update({transactions:txs});
+    await db.collection('withdrawRequests').doc(withdrawId).update({status:'approved',approvedAt:new Date().toISOString()});
+    toast('Withdraw Approved','ok');
+  }catch(e){alert(e.message);}
+}
+async function rejectWithdraw(withdrawId, phone, amount){
+  if(!confirm('Reject Withdraw RS '+amount+'? Balance will be refunded '+amount))return;
+  try{
+    const userDoc=await db.collection('users').doc(phone).get();
+    const userData=userDoc.data();
+    const newBal=(userData.balance||0)+amount;
+    const newTotalWd=(userData.totalWithdraw||0)-amount;
+    let txs=userData.transactions||[];
+    txs=txs.map(t=>{if(t.withdrawId===withdrawId&&t.status==='pending'){return {...t,status:'rejected',desc:t.desc.replace('Pending','Rejected - Refunded')};}return t;});
+    await db.collection('users').doc(phone).update({balance:newBal,totalWithdraw:newTotalWd,transactions:txs});
+    await db.collection('withdrawRequests').doc(withdrawId).update({status:'rejected',refunded:true});
+    toast('Withdraw Rejected + Refunded','ok');
+  }catch(e){alert(e.message);}
+}
+
 function filterUsers(){
   const q=document.getElementById('search').value.toLowerCase();const status=document.getElementById('filterStatus').value;
   filteredUsers=allUsers.filter(u=>{
