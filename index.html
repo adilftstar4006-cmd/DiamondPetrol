@@ -288,8 +288,141 @@ function closeNotif(){var p=document.getElementById('notifPanel');var o=document
 function markAllRead(){if(currentUser&&currentUser.phone)localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();toast('All marked read','ok');}
 function renderNotifList(){var list=document.getElementById('notifList');if(!list||!currentUser)return;var tx=(currentUser.transactions||[]).slice().reverse().slice(0,20);if(tx.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">No notifications</div>';return;}var html='';for(var i=0;i<tx.length;i++){var t=tx[i];var isApproved=t.status==='approved'&&t.type==='deposit';var icon=isApproved?'✅':t.status==='pending'?'⏳':'💰';var bg=isApproved?'approved':'';html+='<div class="notif-item '+bg+'"><div style="font-size:20px">'+icon+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+(t.desc||t.type)+'</div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(t.date).toLocaleString()+' • '+t.status+'</div><div style="font-size:11px;font-weight:800;margin-top:4px;color:'+(isApproved?'#22c55e':'#f59e0b')+'">RS '+t.amount+'</div></div></div>';}list.innerHTML=html;}
 function updateBellBadge(){var badge=document.getElementById('bellBadge');if(!badge||!currentUser)return;var lastRead=Number(localStorage.getItem('diamond_notif_read_'+currentUser.phone)||0);var newTx=0;for(var i=0;i<(currentUser.transactions||[]).length;i++){if(new Date(currentUser.transactions[i].date).getTime()>lastRead)newTx++;}if(newTx>0){badge.style.display='grid';badge.textContent=newTx>9?'9+':newTx;}else{badge.style.display='none';}}
-function checkForApprovedDeposit(oldTxs,newTxs){var oldMap={};for(var i=0;i<(oldTxs||[]).length;i++){var t=oldTxs[i];oldMap[t.date+'_'+t.amount]=t;}for(var j=0;j<(newTxs||[]).length;j++){var nt=newTxs[j];var key=nt.date+'_'+nt.amount;var old=oldMap[key];if(nt.type==='deposit'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Deposit Approved RS '+nt.amount+' • Balance updated!','ok');setTimeout(function(){openNotif();},800);}if(nt.type==='deposit'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ Deposit Rejected RS '+nt.amount,'err');}if(nt.type==='withdraw'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Withdraw Approved RS '+nt.amount,'ok');setTimeout(function(){openNotif();},800);}if(nt.type==='withdraw'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ Withdraw Rejected RS '+nt.amount,'err');}}}
-function renderWalletPending(){var list=document.getElementById('walletPendingList');var countEl=document.getElementById('pendingCountWallet');if(!list)return;var pending=[];for(var i=0;i<(currentUser.transactions||[]).length;i++){var t=currentUser.transactions[i];if(t.status==='pending')pending.push(t);}if(countEl)countEl.textContent=pending.length+' pending';if(pending.length===0){list.innerHTML='<div style="text-align:center;padding:16px;color:rgba(255,255,255,.4);font-size:12px">✅ No pending • Approved history me chale gaye</div>';return;}var html='';for(var k=pending.length-1;k>=0;k--){var d=pending[k];var isDep=d.type==='deposit';var icon=isDep?'⏳':'💸';var border=isDep?'rgba(245,158,11,.25)':'rgba(96,165,250,.25)';var bg=isDep?'rgba(245,158,11,.15)':'rgba(96,165,250,.15)';html+='<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:#0d1023;border:1px solid '+border+';margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:'+bg+';display:grid;place-items:center">'+icon+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS '+d.amount+' • '+(isDep?(d.method||'JazzCash'):d.method)+' • <span style="color:#f59e0b">PENDING '+d.type.toUpperCase()+'</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(d.date).toLocaleString()+'</div></div></div>';}list.innerHTML=html;}
+function checkForApprovedDeposit(oldTxs,newTxs){
+  var oldMap={};
+  for(var i=0;i<(oldTxs||[]).length;i++){var t=oldTxs[i]; oldMap[t.date+'_'+t.amount]=t; if(t.depositId) oldMap[t.depositId]=t; if(t.withdrawId) oldMap[t.withdrawId]=t;}
+  for(var j=0;j<(newTxs||[]).length;j++){
+    var nt=newTxs[j];
+    var key=nt.depositId||nt.withdrawId||nt.date+'_'+nt.amount;
+    var old=oldMap[key]||oldMap[nt.date+'_'+nt.amount];
+    if(nt.type==='deposit'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Deposit Approved RS '+nt.amount+' • Balance updated!','ok'); setTimeout(function(){openNotif();},800);}
+    if(nt.type==='deposit'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ YOUR ORDER REJECTED - RS '+nt.amount+' DEPOSIT REJECTED','err'); setTimeout(function(){openNotif();},500);}
+    if(nt.type==='withdraw'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Withdraw Approved RS '+nt.amount,'ok'); setTimeout(function(){openNotif();},800);}
+    if(nt.type==='withdraw'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ YOUR ORDER REJECTED - RS '+nt.amount+' WITHDRAW REJECTED - Refunded','err'); setTimeout(function(){openNotif();},500);}
+  }
+}
+let walletDepositCache=[], walletWithdrawCache=[];
+let walletPendingUnsub1=null, walletPendingUnsub2=null;
+
+function listenWalletPending(phone){
+  if(!phone)return;
+  console.log('Listening wallet pending for', phone);
+  
+  // Clean old listeners
+  if(walletPendingUnsub1){walletPendingUnsub1(); walletPendingUnsub1=null;}
+  if(walletPendingUnsub2){walletPendingUnsub2(); walletPendingUnsub2=null;}
+  
+  // Listen to user's own depositRequests - NO composite index needed, filter status client side
+  try{
+    walletPendingUnsub1=db.collection('depositRequests').where('phone','==',phone).onSnapshot(function(snap){
+      walletDepositCache=[];
+      snap.forEach(function(doc){
+        var d=doc.data();
+        if(d.status==='pending') walletDepositCache.push(d);
+      });
+      console.log('Deposit cache', walletDepositCache.length);
+      renderWalletPending();
+    }, function(err){
+      console.error('Deposit listen error', err);
+      // Fallback: try get once
+      db.collection('depositRequests').where('phone','==',phone).get().then(function(snap){
+        walletDepositCache=[];
+        snap.forEach(function(doc){
+          var d=doc.data();
+          if(d.status==='pending') walletDepositCache.push(d);
+        });
+        renderWalletPending();
+      });
+    });
+  }catch(e){console.error(e);}
+  
+  try{
+    walletPendingUnsub2=db.collection('withdrawRequests').where('phone','==',phone).onSnapshot(function(snap){
+      walletWithdrawCache=[];
+      snap.forEach(function(doc){
+        var d=doc.data();
+        if(d.status==='pending') walletWithdrawCache.push(d);
+      });
+      console.log('Withdraw cache', walletWithdrawCache.length);
+      renderWalletPending();
+    }, function(err){
+      console.error('Withdraw listen error', err);
+      db.collection('withdrawRequests').where('phone','==',phone).get().then(function(snap){
+        walletWithdrawCache=[];
+        snap.forEach(function(doc){
+          var d=doc.data();
+          if(d.status==='pending') walletWithdrawCache.push(d);
+        });
+        renderWalletPending();
+      });
+    });
+  }catch(e){console.error(e);}
+}
+
+
+function renderWalletPending(){
+  var list=document.getElementById('walletPendingList');
+  var countEl=document.getElementById('pendingCountWallet');
+  if(!list)return;
+  
+  var pending=[];
+  var seenIds={};
+  
+  // 1. From user's transactions (old way)
+  for(var i=0;i<(currentUser.transactions||[]).length;i++){
+    var t=currentUser.transactions[i];
+    if(t.status==='pending'){
+      var id=t.depositId||t.withdrawId||t.date+'_'+t.amount+'_'+t.type;
+      if(!seenIds[id]){
+        seenIds[id]=true;
+        pending.push({type:t.type, amount:t.amount, method:t.method||'JazzCash', account:t.account||'', date:t.date, depositId:t.depositId, withdrawId:t.withdrawId, source:'transactions'});
+      }
+    }
+  }
+  
+  // 2. From depositRequests (new - so pending shows even if transactions array missed)
+  for(var d=0;d<walletDepositCache.length;d++){
+    var dep=walletDepositCache[d];
+    var depId=dep.id||dep.depositId;
+    if(!seenIds[depId]){
+      seenIds[depId]=true;
+      pending.push({type:'deposit', amount:dep.amount, method:dep.method||'JazzCash', account:'', date:dep.date, depositId:depId, source:'depositRequests'});
+    }
+  }
+  
+  // 3. From withdrawRequests
+  for(var w=0;w<walletWithdrawCache.length;w++){
+    var wd=walletWithdrawCache[w];
+    var wdId=wd.id||wd.withdrawId;
+    if(!seenIds[wdId]){
+      seenIds[wdId]=true;
+      pending.push({type:'withdraw', amount:wd.amount, method:wd.method||'', account:wd.account||'', date:wd.date, withdrawId:wdId, source:'withdrawRequests'});
+    }
+  }
+  
+  // Sort latest first
+  pending.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+  
+  if(countEl)countEl.textContent=pending.length+' pending';
+  if(pending.length===0){
+    list.innerHTML='<div style="text-align:center;padding:16px;color:rgba(255,255,255,.4);font-size:12px">✅ No pending • Deposit karo to yahan dikhega • Jab tak approve nahi hota yahan rahega • History me nahi jayega</div>';
+    return;
+  }
+  var html='';
+  for(var k=0;k<pending.length;k++){
+    var d=pending[k];
+    var isDep=d.type==='deposit';
+    var icon=isDep?'⏳':'💸';
+    var border=isDep?'rgba(245,158,11,.25)':'rgba(96,165,250,.25)';
+    var bg=isDep?'rgba(245,158,11,.15)':'rgba(96,165,250,.15)';
+    html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid '+border+';margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:'+bg+';display:grid;place-items:center;font-size:18px">'+icon+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS '+d.amount+' • '+(d.method||'JazzCash')+(d.account?' ('+d.account+')':'')+' • <span style="color:#f59e0b">PENDING</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(d.date).toLocaleString()+' • Wallet me rahega jab tak approve nahi hota</div></div></div>';
+  }
+  list.innerHTML=html;
+}
+
+
+
+
 
 
 // ===== REFERRAL SYSTEM WORKING - Signup with referral code =====
@@ -462,7 +595,17 @@ async function doLogin(){
  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
-function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();renderApp();startListener();setTimeout(function(){updateBellBadge();renderWalletPending();},500);}
+function showApp(){
+  if(!currentUser)return;
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('topName').textContent=currentUser.fullName||'meai';
+  document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();
+  renderApp();
+  try{startListener();}catch(e){}
+  try{if(currentUser && currentUser.phone){listenWalletPending(currentUser.phone);}}catch(e){}
+  setTimeout(function(){updateBellBadge();renderWalletPending();},500);
+}
 
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
@@ -474,7 +617,7 @@ function renderApp(){
 
  if(currentPage==='home'){
   c.innerHTML=`
-   <div class="balance-card">
+   <div class="balance-card" style="margin-top:24px">
     <div class="balance-label">⛽ DIAMOND PETROL BALANCE</div>
     <div class="balance-amount"><span class="rs">RS</span><span class="val">${bal.toFixed(2)}</span></div>
     <div class="daily-income">⚡ Daily Petrol Income: <b>${todayIncome} RS</b></div>
@@ -585,13 +728,13 @@ function renderApp(){
     <button class="solar-btn-orange" onclick="switchPage('withdraw')">↑ Withdraw<br><small style="font-size:10px;font-weight:400">Cash out</small></button>
    </div>
    <div class="solar-card" style="border:1px solid rgba(245,158,11,.15);margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:800">⏳ Pending • Wallet Me</div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);color:#f59e0b" id="pendingCountWallet">0 pending</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="margin-bottom:20px; font-weight:800">⏳ Pending • Wallet Me</div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);color:#f59e0b" id="pendingCountWallet">0 pending</span></div>
     <div id="walletPendingList"></div>
     <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center">⏳ Sirf pending yahaan • Approve pe history me jayega</div>
    </div>
 
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ️ Diamond Petrol Wallet Guidelines</div>
+    <div style="margin-top:24px; display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ️ Diamond Petrol Wallet Guidelines</div>
     <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
      <div>✅ Deposit via <b style="color:#fff">Easypaisa or JazzCash</b> • PSO Shell Official Account.</div>
      <div>✅ Withdraw to <b style="color:#fff">Easypaisa, JazzCash, or Bank</b> • KYC must be approved.</div>
@@ -628,7 +771,7 @@ function renderApp(){
         <div style="font-size:11px;color:#f87171;margin-top:6px;text-decoration:underline;cursor:pointer" onclick="removeDepScreenshot()">❌ Remove / Change</div>
       </div>
     </div>
-    <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
+    <button id="realDepositBtn" onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
     </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
@@ -671,7 +814,7 @@ function renderApp(){
      <button class="history-tab" onclick="filterHistory('referral',this)" style="padding:8px 16px;border-radius:999px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:12px">Referral</button>
     </div>
     <div id="historyList">
-     ${(()=>{const approvedTx=tx.filter(function(t){return t.status!=='pending'});return approvedTx.length===0?`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No approved transactions yet<br><span style="font-size:11px">⏳ Pending deposits/withdraws wallet me hain • Approve ke baad yahan ayenge</span></div></div>`:approvedTx.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type} • <span style="color:#22c55e;font-size:10px">${t.status||'approved'}</span></div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'||t.type==='referral'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');})()}
+     ${tx.length===0?`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No transactions found</div></div>`:tx.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('')}
     </div>
    </div>
   `;
@@ -784,15 +927,10 @@ function filterHistory(type,btn){
   document.querySelectorAll('.history-tab').forEach(b=>{b.style.background='transparent';b.style.color='#f59e0b';b.style.border='1px solid rgba(245,158,11,.3)'});
   btn.style.background='#f59e0b';btn.style.color='#000';btn.style.border='none';
   const list=document.getElementById('historyList');
-  const tx=(currentUser.transactions||[]).filter(function(t){return t.status!=='pending'}); // RULE: Pending wallet me, approved history me
+  // History me sirf approved/rejected dikhao, pending wallet me dikhta hai
+  const tx=(currentUser.transactions||[]).filter(t=>t.status!=='pending');
   let filtered=tx;
-  if(type!=='all')filtered=tx.filter(t=>t.type===type||(type==='profit'&&(t.type==='profit'||t.type==='daily'))||(type==='referral'&&t.type==='referral'));
-  if(filtered.length===0){
-    list.innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No ${type} approved transactions<br><span style="font-size:11px">⏳ Pending wallet me hai • Approve ke baad yahan ayega</span></div></div>`;
-  }else{
-    list.innerHTML=filtered.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type} • <span style="color:#22c55e;font-size:10px">${t.status}</span></div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'||t.type==='referral'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');
-  }
-}
+  if(type!=='all')filtered=tx.filter(t=>t.type===type||(type==='profit'&&(t.type==='profit'||t.type==='daily'))||(type==='referral'&&t.type==='referral'));if(filtered.length===0){list.innerHTML=`<div style="text-align:center;padding:40px 20px"><div style="font-size:40px;opacity:.2">📥</div><div style="margin-top:10px;color:rgba(255,255,255,.4)">No ${type} transactions found</div></div>`;}else{list.innerHTML=filtered.slice().reverse().map(t=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div><div style="font-size:12px;font-weight:600">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.4)">${new Date(t.date).toLocaleString()} • ${t.status||'approved'}</div></div><div style="font-weight:700;color:${t.type==='deposit'||t.type==='bonus'||t.type==='profit'?'#34d399':'#f87171'}">RS ${t.amount}</div></div>`).join('');}}
 // PROFESSIONAL MODAL - No more ugly confirm popup
 let pendingInvest={a:0,n:'',d:0};
 function showInvestModal(a,n,d){
@@ -891,54 +1029,32 @@ function getClaimStatus(inv){
 }
 
 let depositScreenshotBase64=null;
-let isDepositSubmitting=false; // Prevent double click
-function resizeImage(base64, maxWidth, quality, callback){
-  const img=new Image();
-  img.onload=function(){
-    let width=img.width;
-    let height=img.height;
-    if(width>maxWidth){
-      height=Math.round((height*maxWidth)/width);
-      width=maxWidth;
-    }
-    // Also limit height to 1200px
-    if(height>1200){
-      width=Math.round((width*1200)/height);
-      height=1200;
-    }
-    const canvas=document.createElement('canvas');
-    canvas.width=width;
-    canvas.height=height;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(img,0,0,width,height);
-    const resized=canvas.toDataURL('image/jpeg', quality);
-    callback(resized);
-  };
-  img.onerror=function(){callback(base64);};
-  img.src=base64;
-}
 function handleDepScreenshot(input){
   const file=input.files[0];
   if(!file)return;
-  // Immediate feedback
-  toast('⏳ Image processing...','ok');
-  if(file.size>5*1024*1024){toast('Max 5MB, resizing...','err');}
+  const MAX_SIZE=2*1024*1024; // 2MB
+  if(file.size>MAX_SIZE){toast('❌ File '+(file.size/1024/1024).toFixed(2)+'MB • Max 2MB','err');input.value='';return;}
+  if(!file.type.startsWith('image/')){toast('❌ Only JPG/PNG','err');input.value='';return;}
+  toast('⏳ Compressing...','ok');
   const reader=new FileReader();
   reader.onload=function(e){
-    const originalBase64=e.target.result;
-    // Resize to max 800px width, quality 0.6 - FIXES RESIZE ISSUE
-    resizeImage(originalBase64, 800, 0.6, function(resizedBase64){
-      depositScreenshotBase64=resizedBase64;
-      const img=document.getElementById('depPreviewImg');
-      const prev=document.getElementById('depPreview');
-      const ph=document.getElementById('depUploadPlaceholder');
-      if(img)img.src=depositScreenshotBase64;
-      if(prev)prev.style.display='block';
-      if(ph)ph.style.display='none';
-      const sizeKB=Math.round(resizedBase64.length*0.75/1024);
-      toast('✅ Screenshot ready • '+sizeKB+'KB (resized from '+(Math.round(file.size/1024))+'KB)','ok');
-      console.log('Image resized:', file.size, '->', resizedBase64.length);
-    });
+    const img=new Image();
+    img.onload=function(){
+      const MAX_W=1024, MAX_H=1024;
+      let w=img.width, h=img.height;
+      if(w>MAX_W||h>MAX_H){
+        if(w>h){h=Math.round(h*MAX_W/w); w=MAX_W;}else{w=Math.round(w*MAX_H/h); h=MAX_H;}
+      }
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.7);
+      depositScreenshotBase64=compressed;
+      document.getElementById('depPreviewImg').src=compressed;
+      document.getElementById('depPreview').style.display='block';
+      document.getElementById('depUploadPlaceholder').style.display='none';
+      toast('✅ Screenshot '+(file.size/1024).toFixed(0)+'KB → '+(Math.round(compressed.length*0.75)/1024).toFixed(0)+'KB','ok');
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -950,124 +1066,75 @@ function removeDepScreenshot(){
   if(inp)inp.value='';
   if(prev)prev.style.display='none';
   if(ph)ph.style.display='block';
-  toast('Screenshot removed','ok');
 }
+let isDepositSubmitting=false;
 function submitDeposit(){
-  // PREVENT DOUBLE CLICK - 2,3 deposit issue fix
-  if(isDepositSubmitting){toast('⏳ Already submitting... Please wait','err');return;}
-  const amountEl=document.getElementById('depAmount');
-  const nameEl=document.getElementById('depName');
-  const submitBtn=document.querySelector('[onclick="submitDeposit()"]');
-  const a=amountEl?.value;
-  const n=nameEl?.value;
-  
-  if(!a||!n){toast('Fill amount and full legal name','err');return;}
-  if(Number(a)<500){toast('Min deposit 500 RS','err');return;}
-  if(!depositScreenshotBase64){toast('⚠ Screenshot upload karo','err');return;}
-  
-  // IMMEDIATE RESPONSE - Click ka response usi time
+  if(isDepositSubmitting){toast('⏳ Already submitting...','err');return;}
   isDepositSubmitting=true;
-  if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='⏳ Submitting... Please wait';submitBtn.style.opacity='0.6';}
-  toast('⏳ Deposit submitting... Wallet me ja raha hai','ok');
+  var btn=document.getElementById('realDepositBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='⏳ Submitting...';btn.style.opacity='0.6';}
   
-  // INSTANT WALLET SWITCH - Deposit menu hat kar wallet me jaye
-  // User ki demand: click karte hi deposit wala menu hat kar wallet me a jaye
-  setTimeout(function(){switchPage('wallet');},100);
+  const a=document.getElementById('depAmount')?.value;
+  const n=document.getElementById('depName')?.value;
+  const method=document.getElementById('depMethod')?.value||'JazzCash';
+  if(!a||!n){toast('Fill amount and name','err');isDepositSubmitting=false;if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}return;}
+  if(Number(a)<500){toast('Min 500','err');isDepositSubmitting=false;if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit';btn.style.opacity='1';}return;}
+  if(!depositScreenshotBase64){toast('⚠ Screenshot upload karo','err');isDepositSubmitting=false;if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit';btn.style.opacity='1';}return;}
   
-  const amt=Number(a);
-  // DEDUP CHECK - Agar same amount ka pending already hai last 2 min me, to block karo
-  const now=Date.now();
-  const recentPending=(currentUser.transactions||[]).filter(function(t){
-    return t.type==='deposit' && t.status==='pending' && Number(t.amount)===Number(amt) && (now - new Date(t.date).getTime()) < 120000; // 2 min
+  var amt=Number(a);
+  // Only block exact same amount+method within 10 seconds (double click), allow different amounts
+  var now=Date.now();
+  var duplicateSame=(currentUser.transactions||[]).some(function(t){
+    return t.status==='pending' && t.type==='deposit' && Number(t.amount)===amt && (t.method||'')===method && (now - new Date(t.date).getTime()) < 10000;
   });
-  if(recentPending.length>0){
-    toast('⚠ RS '+amt+' ka deposit already pending hai • 2 min me double deposit block • Wallet me check karo','err');
+  if(duplicateSame){
+    toast('⚠ Same RS '+amt+' • '+method+' 10 sec pehle hi pending hai • Thora wait karo','err');
     isDepositSubmitting=false;
-    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
+    if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}
     return;
   }
-  const depositId=Date.now().toString()+'_'+currentUser.phone;
-  const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:document.getElementById('depMethod')?.value||'JazzCash',depositId:depositId,hasScreenshot:true};
-  const depDoc={id:depositId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amt,method:document.getElementById('depMethod')?.value||'JazzCash',senderName:n,screenshot:depositScreenshotBase64,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||currentUser.fullName||'',kycCnic:currentUser.kycData?.cnic||''};
   
-  db.collection('depositRequests').doc(depositId).set(depDoc).then(()=>{
+  const depositId=Date.now().toString()+'_'+currentUser.phone+'_'+Math.random().toString(36).substr(2,5);
+  const tx={type:'deposit',amount:amt,desc:'Deposit via '+method+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:method,depositId:depositId,hasScreenshot:true};
+  const depDoc={id:depositId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amt,method:method,senderName:n,screenshot:depositScreenshotBase64,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||currentUser.fullName||'',kycCnic:currentUser.kycData?.cnic||''};
+  
+  db.collection('depositRequests').doc(depositId).set(depDoc).then(function(){
     return db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-  }).then(()=>{
-    currentUser.transactions=[...(currentUser.transactions||[]),tx];
+  }).then(function(){
     depositScreenshotBase64=null;
-    // Clear form
-    if(amountEl)amountEl.value='';
-    if(nameEl)nameEl.value='';
-    removeDepScreenshot();
-    toast('✅ Deposit RS '+a+' submitted • Wallet me pending • Approve ke baad history me jayega','ok');
-    renderWalletPending();
+    document.getElementById('depAmount').value='';
+    document.getElementById('depName').value='';
+    var prev=document.getElementById('depPreview'); if(prev)prev.style.display='none';
+    var ph=document.getElementById('depUploadPlaceholder'); if(ph)ph.style.display='block';
+    toast('✅ Deposit RS '+a+' submitted • Wallet me pending rahega jab tak approve nahi hota','ok');
     isDepositSubmitting=false;
-    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
-  }).catch(e=>{
+    if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}
+    setTimeout(function(){switchPage('wallet');},100);
+  }).catch(function(e){
     isDepositSubmitting=false;
-    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
-    toast('❌ Error: '+e.message,'err');
+    if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}
+    toast('❌ '+e.message,'err');
   });
 }
-let isWithdrawSubmitting=false;
+
+
+
 async function submitWithdraw(){
- if(isWithdrawSubmitting){toast('⏳ Already submitting withdraw...','err');return;}
- var amountEl=document.getElementById('wdAmount');
- var amount=Number(amountEl?.value||0);
- var method=document.getElementById('wdMethod')?.value;
- var acc=document.getElementById('wdAccount')?.value.trim();
- var submitBtn=document.querySelector('[onclick="submitWithdraw()"]');
- 
+ var amount=Number(document.getElementById('wdAmount')?.value||0);var method=document.getElementById('wdMethod')?.value;var acc=document.getElementById('wdAccount')?.value.trim();
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved','err');switchPage('profile');return;}
- if(!amount||amount<500){toast('Min 500','err');return;}
- if(amount>currentUser.balance){toast('Insufficient balance','err');return;}
- if(!acc||acc.length<8){toast('Account number required','err');return;}
- 
- // IMMEDIATE RESPONSE - No confirm popup, direct modal style
- isWithdrawSubmitting=true;
- if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='⏳ Submitting...';submitBtn.style.opacity='0.6';}
- toast('⏳ Withdraw submitting... Wallet me ja raha hai','ok');
- 
- // INSTANT WALLET SWITCH - Same as deposit
- setTimeout(function(){switchPage('wallet');},100);
- 
+ if(!amount||amount<500){toast('Min 500','err');return;}if(amount>currentUser.balance){toast('Insufficient','err');return;}if(!acc||acc.length<8){toast('Account required','err');return;}
+ if(!confirm('Withdraw RS '+amount+' to '+acc+'?'))return;
  try{
-  var fee=Math.ceil(amount*0.05);
-  var receive=amount-fee;
-  // DEDUP CHECK for withdraw
-  const nowW=Date.now();
-  const recentPendingW=(currentUser.transactions||[]).filter(function(t){
-    return t.type==='withdraw' && t.status==='pending' && Number(t.amount)===Number(amount) && (nowW - new Date(t.date).getTime()) < 120000;
-  });
-  if(recentPendingW.length>0){
-    toast('⚠ RS '+amount+' ka withdraw already pending hai • 2 min wait karo','err');
-    isWithdrawSubmitting=false;
-    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
-    return;
-  }
+  var fee=Math.ceil(amount*0.05);var receive=amount-fee;
   var withdrawId=Date.now().toString()+'_'+currentUser.phone;
-  var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending - Fee RS '+fee+' - You receive RS '+receive,date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
+  var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending',date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
   var wdDoc={id:withdrawId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amount,method:method,account:acc,fee:fee,receive:receive,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||''};
   await db.collection('withdrawRequests').doc(withdrawId).set(wdDoc);
   var newBal=currentUser.balance-amount;
   await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-  currentUser.balance=newBal;
-  currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;
-  currentUser.transactions.push(tx);
-  // Clear form
-  if(amountEl)amountEl.value='';
-  var accEl=document.getElementById('wdAccount');
-  if(accEl)accEl.value='';
-  toast('✅ Withdraw RS '+amount+' requested • Wallet me pending • Fee RS '+fee+' • Receive RS '+receive,'ok');
-  renderApp();
-  renderWalletPending();
-  isWithdrawSubmitting=false;
-  if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
- }catch(e){
-  isWithdrawSubmitting=false;
-  if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
-  toast('❌ Error: '+e.message,'err');
- }
+  currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions.push(tx);
+  toast('Withdraw RS '+amount+' requested • Wallet me pending','ok');renderApp();switchPage('wallet');
+ }catch(e){toast(e.message,'err');}
 }
 async function submitKyc(){
  const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value||'2000-01-01';const father=document.getElementById('kycFather')?.value.trim()||'As per CNIC';const addr=document.getElementById('kycAddr')?.value.trim()||'As per CNIC';const agree=document.getElementById('kycAgree')?.checked;
@@ -1091,35 +1158,7 @@ async function submitKycOLD_DUPLICATE(){
  }catch(e){toast(e.message,'err');}
 }
 async function loadCurrent(){const p=localStorage.getItem('diamond_current_glass_v22');if(!p)return;try{const d=await db.collection('users').doc(p).get();if(d.exists){currentUser=d.data();showApp();}}catch(e){}}
-function startListener(){
-  if(!currentUser||unsub)return;
-  unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{
-    if(!s.exists)return;
-    var fb=s.data();
-    if(JSON.stringify(fb)!==JSON.stringify(currentUser)){
-      var oldTxs=currentUser.transactions||[];
-      var newTxs=fb.transactions||[];
-      // Check if pending became approved - if yes, move from wallet to history
-      for(var i=0;i<newTxs.length;i++){
-        var nt=newTxs[i];
-        var old=null;
-        for(var j=0;j<oldTxs.length;j++){if(oldTxs[j].date===nt.date && oldTxs[j].amount===nt.amount){old=oldTxs[j];break;}}
-        if(nt.status==='approved' && old && old.status==='pending'){
-          if(nt.type==='deposit'){
-            toast('✅ Deposit Approved RS '+nt.amount+' • Wallet se history me gaya • Balance updated!','ok');
-          }else if(nt.type==='withdraw'){
-            toast('✅ Withdraw Approved RS '+nt.amount+' • Wallet se history me gaya','ok');
-          }
-          setTimeout(function(){openNotif();},800);
-        }
-      }
-      currentUser=fb;
-      renderApp();
-      updateBellBadge();
-      renderWalletPending();
-    }
-  });
-}
+function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;var fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){var oldTxs=currentUser.transactions||[];var newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;renderApp();updateBellBadge();renderWalletPending();}});}
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
 </script>
