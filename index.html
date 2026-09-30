@@ -891,20 +891,54 @@ function getClaimStatus(inv){
 }
 
 let depositScreenshotBase64=null;
+let isDepositSubmitting=false; // Prevent double click
+function resizeImage(base64, maxWidth, quality, callback){
+  const img=new Image();
+  img.onload=function(){
+    let width=img.width;
+    let height=img.height;
+    if(width>maxWidth){
+      height=Math.round((height*maxWidth)/width);
+      width=maxWidth;
+    }
+    // Also limit height to 1200px
+    if(height>1200){
+      width=Math.round((width*1200)/height);
+      height=1200;
+    }
+    const canvas=document.createElement('canvas');
+    canvas.width=width;
+    canvas.height=height;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,width,height);
+    const resized=canvas.toDataURL('image/jpeg', quality);
+    callback(resized);
+  };
+  img.onerror=function(){callback(base64);};
+  img.src=base64;
+}
 function handleDepScreenshot(input){
   const file=input.files[0];
   if(!file)return;
-  if(file.size>3*1024*1024){toast('Max 3MB','err');input.value='';return;}
+  // Immediate feedback
+  toast('⏳ Image processing...','ok');
+  if(file.size>5*1024*1024){toast('Max 5MB, resizing...','err');}
   const reader=new FileReader();
   reader.onload=function(e){
-    depositScreenshotBase64=e.target.result;
-    const img=document.getElementById('depPreviewImg');
-    const prev=document.getElementById('depPreview');
-    const ph=document.getElementById('depUploadPlaceholder');
-    if(img)img.src=depositScreenshotBase64;
-    if(prev)prev.style.display='block';
-    if(ph)ph.style.display='none';
-    toast('Screenshot selected ✅','ok');
+    const originalBase64=e.target.result;
+    // Resize to max 800px width, quality 0.6 - FIXES RESIZE ISSUE
+    resizeImage(originalBase64, 800, 0.6, function(resizedBase64){
+      depositScreenshotBase64=resizedBase64;
+      const img=document.getElementById('depPreviewImg');
+      const prev=document.getElementById('depPreview');
+      const ph=document.getElementById('depUploadPlaceholder');
+      if(img)img.src=depositScreenshotBase64;
+      if(prev)prev.style.display='block';
+      if(ph)ph.style.display='none';
+      const sizeKB=Math.round(resizedBase64.length*0.75/1024);
+      toast('✅ Screenshot ready • '+sizeKB+'KB (resized from '+(Math.round(file.size/1024))+'KB)','ok');
+      console.log('Image resized:', file.size, '->', resizedBase64.length);
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -916,44 +950,102 @@ function removeDepScreenshot(){
   if(inp)inp.value='';
   if(prev)prev.style.display='none';
   if(ph)ph.style.display='block';
+  toast('Screenshot removed','ok');
 }
 function submitDeposit(){
-  const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;
+  // PREVENT DOUBLE CLICK - 2,3 deposit issue fix
+  if(isDepositSubmitting){toast('⏳ Already submitting... Please wait','err');return;}
+  const amountEl=document.getElementById('depAmount');
+  const nameEl=document.getElementById('depName');
+  const submitBtn=document.querySelector('[onclick="submitDeposit()"]');
+  const a=amountEl?.value;
+  const n=nameEl?.value;
+  
   if(!a||!n){toast('Fill amount and full legal name','err');return;}
   if(Number(a)<500){toast('Min deposit 500 RS','err');return;}
   if(!depositScreenshotBase64){toast('⚠ Screenshot upload karo','err');return;}
+  
+  // IMMEDIATE RESPONSE - Click ka response usi time
+  isDepositSubmitting=true;
+  if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='⏳ Submitting... Please wait';submitBtn.style.opacity='0.6';}
+  toast('⏳ Deposit submitting... Wallet me ja raha hai','ok');
+  
+  // INSTANT WALLET SWITCH - Deposit menu hat kar wallet me jaye
+  // User ki demand: click karte hi deposit wala menu hat kar wallet me a jaye
+  setTimeout(function(){switchPage('wallet');},100);
+  
   const amt=Number(a);
   const depositId=Date.now().toString()+'_'+currentUser.phone;
   const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:document.getElementById('depMethod')?.value||'JazzCash',depositId:depositId,hasScreenshot:true};
-  // For admin approval - depositRequests collection (same as withdraw)
   const depDoc={id:depositId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amt,method:document.getElementById('depMethod')?.value||'JazzCash',senderName:n,screenshot:depositScreenshotBase64,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||currentUser.fullName||'',kycCnic:currentUser.kycData?.cnic||''};
+  
   db.collection('depositRequests').doc(depositId).set(depDoc).then(()=>{
     return db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
   }).then(()=>{
     currentUser.transactions=[...(currentUser.transactions||[]),tx];
     depositScreenshotBase64=null;
-    // Note: Referral bonus will be given after admin approval, not on submit
-    toast('✅ Deposit RS '+a+' submitted • Wallet me pending • Admin approve karega to history me jayega','ok');
+    // Clear form
+    if(amountEl)amountEl.value='';
+    if(nameEl)nameEl.value='';
+    removeDepScreenshot();
+    toast('✅ Deposit RS '+a+' submitted • Wallet me pending • Approve ke baad history me jayega','ok');
     renderWalletPending();
-    switchPage('wallet');
-  }).catch(e=>toast(e.message,'err'));
+    isDepositSubmitting=false;
+    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
+  }).catch(e=>{
+    isDepositSubmitting=false;
+    if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✅ Submit Deposit • PSO Official';submitBtn.style.opacity='1';}
+    toast('❌ Error: '+e.message,'err');
+  });
 }
+let isWithdrawSubmitting=false;
 async function submitWithdraw(){
- var amount=Number(document.getElementById('wdAmount')?.value||0);var method=document.getElementById('wdMethod')?.value;var acc=document.getElementById('wdAccount')?.value.trim();
+ if(isWithdrawSubmitting){toast('⏳ Already submitting withdraw...','err');return;}
+ var amountEl=document.getElementById('wdAmount');
+ var amount=Number(amountEl?.value||0);
+ var method=document.getElementById('wdMethod')?.value;
+ var acc=document.getElementById('wdAccount')?.value.trim();
+ var submitBtn=document.querySelector('[onclick="submitWithdraw()"]');
+ 
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved','err');switchPage('profile');return;}
- if(!amount||amount<500){toast('Min 500','err');return;}if(amount>currentUser.balance){toast('Insufficient','err');return;}if(!acc||acc.length<8){toast('Account required','err');return;}
- if(!confirm('Withdraw RS '+amount+' to '+acc+'?'))return;
+ if(!amount||amount<500){toast('Min 500','err');return;}
+ if(amount>currentUser.balance){toast('Insufficient balance','err');return;}
+ if(!acc||acc.length<8){toast('Account number required','err');return;}
+ 
+ // IMMEDIATE RESPONSE - No confirm popup, direct modal style
+ isWithdrawSubmitting=true;
+ if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='⏳ Submitting...';submitBtn.style.opacity='0.6';}
+ toast('⏳ Withdraw submitting... Wallet me ja raha hai','ok');
+ 
+ // INSTANT WALLET SWITCH - Same as deposit
+ setTimeout(function(){switchPage('wallet');},100);
+ 
  try{
-  var fee=Math.ceil(amount*0.05);var receive=amount-fee;
+  var fee=Math.ceil(amount*0.05);
+  var receive=amount-fee;
   var withdrawId=Date.now().toString()+'_'+currentUser.phone;
-  var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending',date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
+  var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending - Fee RS '+fee+' - You receive RS '+receive,date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
   var wdDoc={id:withdrawId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amount,method:method,account:acc,fee:fee,receive:receive,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||''};
   await db.collection('withdrawRequests').doc(withdrawId).set(wdDoc);
   var newBal=currentUser.balance-amount;
   await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-  currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions.push(tx);
-  toast('Withdraw RS '+amount+' requested • Wallet me pending','ok');renderApp();switchPage('wallet');
- }catch(e){toast(e.message,'err');}
+  currentUser.balance=newBal;
+  currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;
+  currentUser.transactions.push(tx);
+  // Clear form
+  if(amountEl)amountEl.value='';
+  var accEl=document.getElementById('wdAccount');
+  if(accEl)accEl.value='';
+  toast('✅ Withdraw RS '+amount+' requested • Wallet me pending • Fee RS '+fee+' • Receive RS '+receive,'ok');
+  renderApp();
+  renderWalletPending();
+  isWithdrawSubmitting=false;
+  if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
+ }catch(e){
+  isWithdrawSubmitting=false;
+  if(submitBtn){submitBtn.disabled=false;submitBtn.innerHTML='✈ Submit Withdraw';submitBtn.style.opacity='1';}
+  toast('❌ Error: '+e.message,'err');
+ }
 }
 async function submitKyc(){
  const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value||'2000-01-01';const father=document.getElementById('kycFather')?.value.trim()||'As per CNIC';const addr=document.getElementById('kycAddr')?.value.trim()||'As per CNIC';const agree=document.getElementById('kycAgree')?.checked;
