@@ -187,7 +187,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <div class="pro-modal-row"><span>Daily Profit (4%)</span><b class="green" id="modalDaily">RS 120/day</b></div>
       <div class="pro-modal-row"><span>Total Return (15 days)</span><b id="modalTotal">RS 1,800</b></div>
       <div class="pro-modal-row"><span>Duration</span><b>15 days</b></div>
-      <div class="pro-modal-row"><span>Referral Bonus</span><b style="color:#22c55e">Referrer ko 10% = <span id="modalReferral">RS 300</span></b></div>
+      <div class="pro-modal-row"><span>Referral Bonus</span><b style="color:#22c55e">Referrer ko 2% Frozen = <span id="modalReferral">RS 300</span></b></div>
     </div>
     <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px;text-align:center;line-height:1.5">✅ PSO Shell Official • Secure • Instant activation • Daily 4% profit • After 15 days principal return</div>
     <div class="pro-modal-actions">
@@ -486,7 +486,7 @@ async function distributeDepositBonus(depositAmount, depositorPhone, depositorNa
     }
     // Limit 3 levels
     const levels = chain.slice(0,3);
-    const rates = [0.10, 0.05, 0.02]; // L1 10%, L2 5%, L3 2%
+    const rates = [0.02]; // NEW: L1 2% only - frozen me, income me nahi
     for(let i=0;i<levels.length;i++){
       const refPhone=levels[i];
       const rate=rates[i];
@@ -498,12 +498,12 @@ async function distributeDepositBonus(depositAmount, depositorPhone, depositorNa
       const refData=refSnap.data();
       await db.collection('users').doc(refPhone).update({
         balance: (refData.balance||0)+bonus,
+        frozenBalance: (refData.frozenBalance||0)+bonus,
         referralEarnings: (refData.referralEarnings||0)+bonus,
-        totalEarning: (refData.totalEarning||0)+bonus,
         transactions: firebase.firestore.FieldValue.arrayUnion({
-          type:'referral',
+          type:'referral_frozen',
           amount:bonus,
-          desc:`Referral L${i+1} Deposit Bonus: ${depositorName} (${depositorPhone}) deposited RS ${depositAmount} → You got ${rate*100}% = RS ${bonus} | Jitna ziada deposit utna faida`,
+          desc:`Referral 2% Frozen: ${depositorName} (${depositorPhone}) deposited RS ${depositAmount} → You got 2% = RS ${bonus} in Frozen • Invest karo, withdraw nahi`,
           date:new Date().toISOString(),
           status:'approved',
           from:depositorPhone,
@@ -519,6 +519,7 @@ async function distributeDepositBonus(depositAmount, depositorPhone, depositorNa
 // Profit pe bhi referral bonus - Jitna jeety ga utna hisa milega
 // Daily collect pe 10% L1, 5% L2, 2% L3 of profit
 async function distributeProfitBonus(profitAmount, earnerPhone, earnerName, planName){
+  return; // NEW: Profit pe referral band - sirf deposit pe 2%
   try{
     const userSnap=await db.collection('users').doc(earnerPhone).get();
     if(!userSnap.exists) return;
@@ -542,10 +543,10 @@ async function distributeProfitBonus(profitAmount, earnerPhone, earnerName, plan
       const refData=refSnap.data();
       await db.collection('users').doc(refPhone).update({
         balance: (refData.balance||0)+bonus,
+        frozenBalance: (refData.frozenBalance||0)+bonus,
         referralEarnings: (refData.referralEarnings||0)+bonus,
-        totalEarning: (refData.totalEarning||0)+bonus,
         transactions: firebase.firestore.FieldValue.arrayUnion({
-          type:'referral',
+          type:'referral_frozen',
           amount:bonus,
           desc:`Referral L${i+1} Profit Bonus: ${earnerName} earned RS ${profitAmount} from ${planName} → You got ${rate*100}% = RS ${bonus} | Daily profit sharing`,
           date:new Date().toISOString(),
@@ -620,7 +621,11 @@ function renderApp(){
      ${active.map(a=>`
       <div style="background:#0d1023;border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
        <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:12px">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">Daily: RS ${a.daily} • Claimed: RS ${a.totalClaimed||0} • ${a.daysCompleted||0}/15 days</div><div style="margin-top:6px;height:5px;background:#1a1a1a;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div></div>
-       <div style="display:flex;flex-direction:column;gap:6px">${(()=>{const st=getClaimStatus(a);return `<button onclick="${st.canClaim?`claimOne('${a.id}')`:`toast('Next claim in ${st.text} - Har 24h me ek baar','err')`}" style="padding:8px 16px;border-radius:999px;background:${st.canClaim?'linear-gradient(90deg,#22c55e,#16a34a)':'linear-gradient(90deg,#374151,#4b5563)'};color:${st.canClaim?'#000':'#9ca3af'};font-weight:800;font-size:11px;border:none;cursor:${st.canClaim?'pointer':'not-allowed'};${st.canClaim?'animation:glowPulse 2s infinite':''}">${st.canClaim?'💰 DAILY COLLECT • RS '+a.daily:'⏳ '+st.text}</button>`;})()}}<div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
+       <div style="display:flex;flex-direction:column;gap:6px">${(()=>{const st=getClaimStatus(a); 
+      if((a.daysCompleted||0)>=15 && a.status==='active'){
+        return `<button onclick="claimPrincipal('${a.id}')" style="padding:8px 16px;border-radius:999px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:11px;border:none;cursor:pointer;animation:glowPulse 2s infinite">❄️ CLAIM PRINCIPAL • RS ${a.amount} • Frozen me wapas</button>`;
+      }
+      return `<button onclick="${st.canClaim?`claimOne('${a.id}')`:`toast('Next claim in ${st.text} - Har 24h me ek baar','err')`}" style="padding:8px 16px;border-radius:999px;background:${st.canClaim?'linear-gradient(90deg,#22c55e,#16a34a)':'linear-gradient(90deg,#374151,#4b5563)'};color:${st.canClaim?'#000':'#9ca3af'};font-weight:800;font-size:11px;border:none;cursor:${st.canClaim?'pointer':'not-allowed'};${st.canClaim?'animation:glowPulse 2s infinite':''}">${st.canClaim?'💰 DAILY COLLECT • RS '+a.daily:'⏳ '+st.text}</button>`;})()}}<div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
       </div>
      `).join('')}
     </div>
@@ -682,9 +687,70 @@ function renderApp(){
   c.innerHTML=`
    <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Diamond Petrol Wallet</div>
    <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Manage your deposits and withdrawals • PSO Shell Official</div>
-   <div class="solar-card">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:rgba(255,255,255,.5)">Available Balance</span><span style="font-size:20px;font-weight:800;color:#f59e0b">RS ${bal.toFixed(2)}</span></div>
-    <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:rgba(255,255,255,.5)"><span>↑ Deposits: <b style="color:#fff">${totalDep} RS</b></span><span>↓ Withdrawals: <b style="color:#fff">${totalWd} RS</b></span><span>⛽ Petrol Income: <b style="color:#fff">${totalEarn} RS</b></span></div>
+   <!-- 3 BALANCE ONLY - Saaf Saaf -->
+   <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px">
+     <div style="padding:18px;border-radius:16px;background:linear-gradient(135deg,#0c4a6e,#082f49);border:2px solid rgba(6,182,212,.4);position:relative;overflow:hidden">
+       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(6,182,212,.1);border-radius:50%"></div>
+       <div style="display:flex;justify-content:space-between;align-items:center">
+         <div>
+           <div style="font-size:12px;color:#22d3ee;font-weight:800;letter-spacing:1px">❄️ FREEZ BALANCE</div>
+           <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Jo Freeze Ho Gaya</div>
+         </div>
+         <div style="font-size:28px">🔒</div>
+       </div>
+       <div style="font-size:32px;font-weight:900;color:#fff;margin-top:12px">RS ${( (currentUser.totalDeposit||0) + (currentUser.frozenBalance||0) ).toFixed(0)}</div>
+       <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.6)">
+         <span>Deposits: <b style="color:#fff">${totalDep} RS</b></span>
+         <span>Active: <b style="color:#fbbf24">${(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((s,i)=>s+(i.amount||0),0)} RS</b></span>
+         <span>Ref 2%: <b style="color:#a78bfa">${(currentUser.frozenBalance||0)} RS</b></span>
+       </div>
+       <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(6,182,212,.15);font-size:10px;color:#22d3ee;font-weight:700">❌ WITHDRAW NAHI • Sirf offer ke liye use hoga</div>
+     </div>
+
+     <div style="padding:18px;border-radius:16px;background:linear-gradient(135deg,#052e16,#14532d);border:2px solid rgba(34,197,94,.5);position:relative;overflow:hidden">
+       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(34,197,94,.1);border-radius:50%"></div>
+       <div style="display:flex;justify-content:space-between;align-items:center">
+         <div>
+           <div style="font-size:12px;color:#4ade80;font-weight:800;letter-spacing:1px">💰 INCOME BALANCE</div>
+           <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Jo Earn Hua Income - Full Withdraw</div>
+         </div>
+         <div style="font-size:28px">💸</div>
+       </div>
+       <div style="font-size:32px;font-weight:900;color:#fff;margin-top:12px">RS ${totalEarn.toFixed(0)}</div>
+       <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.6)">
+         <span>Total Earn: <b style="color:#fff">${totalEarn} RS</b></span>
+         <span>Withdrawable: <b style="color:#4ade80">${totalEarn.toFixed(0)} RS</b></span>
+         <span>Tax: <b style="color:#4ade80">0% No Tax</b></span>
+       </div>
+       <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(34,197,94,.2);font-size:10px;color:#4ade80;font-weight:700">✅ TOTAL EARN ${totalEarn} = ${totalEarn} WITHDRAW • No Tax • Baqi freeze</div>
+     </div>
+
+     <div style="padding:18px;border-radius:16px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:2px solid rgba(99,102,241,.4);position:relative;overflow:hidden">
+       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(99,102,241,.1);border-radius:50%"></div>
+       <div style="display:flex;justify-content:space-between;align-items:center">
+         <div>
+           <div style="font-size:12px;color:#818cf8;font-weight:800;letter-spacing:1px">💳 REMAINING BALANCE</div>
+           <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Offer Lagane Ke Baad Bacha Hua</div>
+         </div>
+         <div style="font-size:28px">💼</div>
+       </div>
+       <div style="font-size:32px;font-weight:900;color:#fff;margin-top:12px">RS ${bal.toFixed(2)}</div>
+       <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.6)">
+         <span>Is se offer le sakty</span>
+         <span>15 din lock hoga</span>
+       </div>
+       <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(99,102,241,.15);font-size:10px;color:#818cf8;font-weight:700">🔄 IS SE DOBARA OFFER LE SAKTY • 15 din lock</div>
+     </div>
+   </div>
+
+   <div style="padding:12px;border-radius:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);margin-bottom:12px">
+     <div style="font-size:12px;font-weight:800;color:#fbbf24;margin-bottom:6px">ℹ️ 3 BALANCE - Saaf Saaf Samjho:</div>
+     <div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.6">
+       <b style="color:#22d3ee">1. Freez Balance (🔒):</b> Jo deposit hua wo freeze, withdraw nahi. Deposits + Active offers + Referral 2%<br>
+       <b style="color:#4ade80">2. Income Balance (💰):</b> Jo earn hua, sirf ye withdraw hoga. Total profit - withdrawals<br>
+       <b style="color:#818cf8">3. Remaining Balance (💳):</b> Offer lagane ke baad jo bacha, is se dobara offer le sakty, 15 din lock
+     </div>
+   </div>
     ${kycStatus!=='approved'?`<div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);font-size:11px;color:#fca5a5">⚠️ KYC Required for Withdraw • Profile > KYC Submit CNIC & Full Legal Name</div>`:''}
    </div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -749,10 +815,10 @@ function renderApp(){
    ${!canWithdraw?`<div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:700;color:#fca5a5;font-size:13px">🔒 KYC Required for Withdraw</div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Withdraw KYC ke bagair nahi hoga. Profile > KYC me CNIC, Full Legal Name submit karen. Admin 24h me approve karega. Jab tak KYC approved nahi, withdraw blocked hai.</div><button onclick="switchPage('profile')" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:#f59e0b;color:#000;border:none;font-weight:700;font-size:11px">Go to KYC • Submit CNIC</button></div>`:''}
    <div class="solar-card" style="${!canWithdraw?'opacity:.6;pointer-events:none':''}">
     <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds • KYC ${canWithdraw?'Approved ✅':'Required 🔒'}</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ 5% fee applies. Min 500 RS. KYC approved required.</div></div></div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ 0% fee - No Tax - Full withdraw. Min 500 RS. KYC approved required.</div></div></div>
     <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Processing: 2-3 hours max • Any time withdraw • KYC: ${kycStatus.toUpperCase()}</div></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Available Balance</span><b style="color:#fff">RS ${bal.toFixed(2)}</b></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Withdrawal Fee (5%)</span><b style="color:#fff" id="wdFee">RS 0.00</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${bal.toFixed(2)}</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Withdrawal Fee (0% No Tax)</span><b style="color:#fff" id="wdFee">RS 0.00</b></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
     <input id="wdAmount" type="number" placeholder="Min 3000 • Max 50000" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
@@ -926,11 +992,11 @@ async function confirmInvest(){
     const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';
     const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now(),totalClaimed:0,daysCompleted:0,status:'active'}];
     const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};
-    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
+    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,frozenBalance:currentUser.frozenBalance||0,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
     currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
     distributeDepositBonus(a, currentUser.phone, currentUser.fullName);
     renderApp();
-    toast('✅ Invested RS '+a.toLocaleString()+' in '+n+' ('+planCompany+') • Daily RS '+d+' • Referrer ko 10% bonus gaya','ok');
+    toast('✅ Invested RS '+a.toLocaleString()+' in '+n+' ('+planCompany+') • Daily RS '+d+' • Referrer ko 2% frozen me','ok');
   }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
 }
 async function investPlan(a,n,d){
@@ -979,6 +1045,24 @@ async function claimOne(id){
     toast('✅ Claimed RS '+p+' Daily Petrol Income • Day '+(inv.daysCompleted+1)+'/15 • Referrer ko '+Math.floor(p*0.10)+' RS bonus gaya • Next claim 24h baad','ok');
   }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
 }
+
+async function claimPrincipal(id){
+  const inv=currentUser.activeInvests.find(i=>i.id===id);
+  if(!inv) return;
+  if((inv.daysCompleted||0)<15){toast('⏳ '+(inv.daysCompleted||0)+'/15 days, '+(15-(inv.daysCompleted||0))+' din baqi','err');return;}
+  if(inv.status==='completed'){toast('Already claimed','err');return;}
+  try{
+    const principal=inv.amount||0;
+    const nb=currentUser.balance+principal;
+    const na=currentUser.activeInvests.map(i=>i.id===id?{...i,status:'completed',principalClaimed:true}:i);
+    const tx={type:'principal_return',amount:principal,desc:'Principal Return '+inv.planName+' - 15 days - Frozen me, dobara invest kar sakty',date:new Date().toISOString(),status:'approved'};
+    await db.collection('users').doc(currentUser.phone).update({balance:nb,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
+    currentUser.balance=nb;currentUser.activeInvests=na;
+    toast('✅ Principal RS '+principal+' frozen me wapas • Dobara invest kar sakty','ok');
+    renderApp();
+  }catch(e){toast(e.message,'err');}
+}
+
 
 function getClaimStatus(inv){
   const now=Date.now();
@@ -1085,10 +1169,14 @@ function submitDeposit(){
 async function submitWithdraw(){
  var amount=Number(document.getElementById('wdAmount')?.value||0);var method=document.getElementById('wdMethod')?.value;var acc=document.getElementById('wdAccount')?.value.trim();
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved','err');switchPage('profile');return;}
- if(!amount||amount<500){toast('Min 500','err');return;}if(amount>currentUser.balance){toast('Insufficient','err');return;}if(!acc||acc.length<8){toast('Account required','err');return;}
+ if(!amount||amount<500){toast('Min 500','err');return;}
+ var withdrawable = (currentUser.totalEarning||0); // Total Earn 1800 to 1800 he withdraw - no deduction
+ if(amount>withdrawable){toast('❌ Only profit withdrawable • Total Earn: RS '+withdrawable.toFixed(0)+' • 1800 hai to 1800 he withdraw • No tax','err');return;}
+ if(amount>currentUser.balance){toast('Insufficient balance','err');return;}
+ if(!acc||acc.length<8){toast('Account required','err');return;}
  if(!confirm('Withdraw RS '+amount+' to '+acc+'?'))return;
  try{
-  var fee=Math.ceil(amount*0.05);var receive=amount-fee;
+  var fee=0;var receive=amount; // No tax per new rule - Total Earn 1800 to 1800 hi withdraw
   var withdrawId=Date.now().toString()+'_'+currentUser.phone;
   var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending',date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
   var wdDoc={id:withdrawId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amount,method:method,account:acc,fee:fee,receive:receive,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||''};
