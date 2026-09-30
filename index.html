@@ -197,6 +197,23 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
   </div>
 </div>
 <div class="toast-wrap" id="toastWrap"></div>
+<style>
+.notif-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:9998;display:none}
+.notif-overlay.show{display:block}
+.notif-panel{position:fixed;top:0;right:0;width:92%;max-width:380px;height:100%;background:#0d1023;border-left:1px solid rgba(255,255,255,.08);z-index:9999;transform:translateX(100%);transition:.35s;display:flex;flex-direction:column}
+.notif-panel.show{transform:translateX(0)}
+.notif-header{padding:16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);background:#151a33}
+.notif-list{flex:1;overflow-y:auto;padding:12px;display:grid;gap:8px}
+.notif-item{padding:12px;border-radius:12px;background:#151a33;border:1px solid rgba(255,255,255,.06);display:flex;gap:10px}
+.notif-item.approved{border-color:rgba(34,197,94,.2);background:linear-gradient(135deg,#151a33,#162e1e)}
+.bell-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;border:2px solid #0d1023}
+</style>
+<div class="notif-overlay" id="notifOverlay" onclick="closeNotif()"></div>
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-header"><div style="font-weight:800">🔔 Notifications</div><div style="display:flex;gap:8px"><button onclick="markAllRead()" style="padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:none;color:#fff;font-size:10px">Mark read</button><button onclick="closeNotif()" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);border:none;color:#fff">✕</button></div></div>
+  <div class="notif-list" id="notifList"></div>
+</div>
+
 
 
 <div id="auth" class="auth">
@@ -226,7 +243,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 <div id="app" class="app">
   <div class="solar-top">
     <div class="solar-top-left"><div class="avatar-circle" id="topAvatar">M</div><div class="welcome">⛽ Welcome back, <b id="topName">meai</b></div></div>
-    <div class="bell">🔔</div>
+    <div class="bell" style="position:relative" onclick="openNotif()"><span style="font-size:18px">🔔</span><div class="bell-badge" id="bellBadge" style="display:none">0</div></div>
   </div>
   <div class="solar-wrap"><div id="appContent"></div></div>
   <div class="bottom-nav">
@@ -266,6 +283,13 @@ function showFieldError(r,e,m){document.getElementById(r)?.classList.add('error'
 function toggleEye(id,el){const i=document.getElementById(id);if(i.type==='password'){i.type='text';el.textContent='🙈';}else{i.type='password';el.textContent='👁️';}}
 function setLoading(b,l,txt){const btn=document.getElementById(b);const t=btn.querySelector('.btn-text');if(l){btn.classList.add('loading');btn.disabled=true;isProcessing=true;t.textContent='Please wait...';}else{btn.classList.remove('loading');btn.disabled=false;isProcessing=false;t.textContent=txt;}}
 function switchPage(t){currentPage=t;document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+t)?.classList.add('active');renderApp();}
+function openNotif(){document.getElementById('notifPanel')?.classList.add('show');document.getElementById('notifOverlay')?.classList.add('show');renderNotifList();localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();}
+function closeNotif(){document.getElementById('notifPanel')?.classList.remove('show');document.getElementById('notifOverlay')?.classList.remove('show');}
+function markAllRead(){localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();toast('All marked read','ok');}
+function renderNotifList(){const list=document.getElementById('notifList');if(!list||!currentUser)return;const tx=(currentUser.transactions||[]).slice().reverse().slice(0,20);if(tx.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">No notifications</div>';return;}list.innerHTML=tx.map(t=>{const isApproved=t.status==='approved'&&t.type==='deposit';const isPending=t.status==='pending'&&t.type==='deposit';const icon=isApproved?'✅':isPending?'⏳':t.type==='profit'?'💰':'🎁';const bg=isApproved?'approved':'pending';return `<div class="notif-item ${bg}"><div style="font-size:20px">${icon}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">${new Date(t.date).toLocaleString()} • ${t.status}</div><div style="font-size:11px;font-weight:800;margin-top:4px;color:${isApproved?'#22c55e':'#f59e0b'}">RS ${t.amount} • ${t.status?.toUpperCase()}</div></div></div>`;}).join('');}
+function updateBellBadge(){const badge=document.getElementById('bellBadge');if(!badge||!currentUser)return;const lastRead=Number(localStorage.getItem('diamond_notif_read_'+currentUser.phone)||0);const newTx=(currentUser.transactions||[]).filter(t=>new Date(t.date).getTime()>lastRead).length;if(newTx>0){badge.style.display='grid';badge.textContent=newTx>9?'9+':newTx;}else{badge.style.display='none';}}
+function checkForApprovedDeposit(oldTxs,newTxs){const oldMap={};(oldTxs||[]).forEach(t=>{oldMap[t.date+'_'+t.amount]=t;});(newTxs||[]).forEach(t=>{const key=t.date+'_'+t.amount;const old=oldMap[key];if(t.type==='deposit'&&t.status==='approved'&&(!old||old.status==='pending')){toast('✅ Deposit Approved RS '+t.amount+' • Balance updated!','ok');setTimeout(()=>openNotif(),800);}if(t.type==='deposit'&&t.status==='rejected'&&(!old||old.status==='pending')){toast('❌ Deposit Rejected RS '+t.amount,'err');}});}
+
 
 // ===== REFERRAL SYSTEM WORKING - Signup with referral code =====
 async function doSignup(){
@@ -437,7 +461,7 @@ async function doLogin(){
  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
-function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();renderApp();startListener();}
+function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();renderApp();startListener();setTimeout(()=>{updateBellBadge();},500);}
 
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
@@ -597,8 +621,18 @@ function renderApp(){
         <div style="font-size:11px;color:#f87171;margin-top:6px;text-decoration:underline;cursor:pointer" onclick="removeDepScreenshot()">❌ Remove / Change</div>
       </div>
     </div>
-    <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
+        <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
+    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">🕒 Pending approval • 5-30 mins • PSO Shell Official</div>
+   </div>
+
+   <div class="solar-card" style="margin-top:12px;border:1px solid rgba(245,158,11,.15)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:800">📋 My Deposit Status • Pending / Approved</div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);color:#f59e0b">${(currentUser.transactions||[]).filter(t=>t.type==='deposit').length} deposits</span></div>
+    <div id="myDepositList">
+      ${(()=>{const deps=(currentUser.transactions||[]).filter(t=>t.type==='deposit').slice().reverse();if(deps.length===0){return '<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:12px">No deposits yet • Pehle deposit karo</div>';}return deps.map(d=>`<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:#0d1023;border:1px solid ${d.status==='pending'?'rgba(245,158,11,.25)':d.status==='approved'?'rgba(34,197,94,.25)':'rgba(248,113,113,.25)'};margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:${d.status==='pending'?'rgba(245,158,11,.15)':d.status==='approved'?'rgba(34,197,94,.15)':'rgba(248,113,113,.15)'};display:grid;place-items:center;font-size:18px">${d.status==='pending'?'⏳':d.status==='approved'?'✅':'❌'}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS ${d.amount} • ${d.method||'JazzCash'} • <span style="color:${d.status==='pending'?'#f59e0b':d.status==='approved'?'#22c55e':'#f87171'}">${d.status?.toUpperCase()||'PENDING'}</span></div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">${new Date(d.date).toLocaleString()} • ${d.senderName||''}</div></div>${d.screenshot?`<img src="${d.screenshot}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${d.screenshot}','_blank')">`:''}</div>`).join('');})()}
     </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center">⏳ Pending = Admin approval ka wait • ✅ Approved = Balance me add • Bell pe notification ayega</div>
+   </div>
+
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
  }else if(currentPage==='withdraw'){
@@ -918,7 +952,7 @@ async function submitKycOLD_DUPLICATE(){
  }catch(e){toast(e.message,'err');}
 }
 async function loadCurrent(){const p=localStorage.getItem('diamond_current_glass_v22');if(!p)return;try{const d=await db.collection('users').doc(p).get();if(d.exists){currentUser=d.data();showApp();}}catch(e){}}
-function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;const fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){currentUser=fb;renderApp();}});}
+function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;const fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){const oldTxs=currentUser.transactions||[];const newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;renderApp();updateBellBadge();}});}
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
 </script>
