@@ -205,7 +205,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 .notif-header{padding:16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);background:#151a33}
 .notif-list{flex:1;overflow-y:auto;padding:12px;display:grid;gap:8px}
 .notif-item{padding:12px;border-radius:12px;background:#151a33;border:1px solid rgba(255,255,255,.06);display:flex;gap:10px}
-.notif-item.approved{border-color:rgba(34,197,94,.2);background:linear-gradient(135deg,#151a33,#162e1e)}
+.notif-item.approved{border-color:rgba(34,197,94,.2)}
 .bell-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;border:2px solid #0d1023}
 </style>
 <div class="notif-overlay" id="notifOverlay" onclick="closeNotif()"></div>
@@ -286,7 +286,7 @@ function switchPage(t){currentPage=t;document.querySelectorAll('.bottom-nav butt
 function openNotif(){document.getElementById('notifPanel')?.classList.add('show');document.getElementById('notifOverlay')?.classList.add('show');renderNotifList();localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();}
 function closeNotif(){document.getElementById('notifPanel')?.classList.remove('show');document.getElementById('notifOverlay')?.classList.remove('show');}
 function markAllRead(){localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();toast('All marked read','ok');}
-function renderNotifList(){const list=document.getElementById('notifList');if(!list||!currentUser)return;const tx=(currentUser.transactions||[]).slice().reverse().slice(0,20);if(tx.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">No notifications</div>';return;}list.innerHTML=tx.map(t=>{const isApproved=t.status==='approved'&&t.type==='deposit';const isPending=t.status==='pending'&&t.type==='deposit';const icon=isApproved?'✅':isPending?'⏳':t.type==='profit'?'💰':'🎁';const bg=isApproved?'approved':'pending';return `<div class="notif-item ${bg}"><div style="font-size:20px">${icon}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">${new Date(t.date).toLocaleString()} • ${t.status}</div><div style="font-size:11px;font-weight:800;margin-top:4px;color:${isApproved?'#22c55e':'#f59e0b'}">RS ${t.amount} • ${t.status?.toUpperCase()}</div></div></div>`;}).join('');}
+function renderNotifList(){const list=document.getElementById('notifList');if(!list||!currentUser)return;const tx=(currentUser.transactions||[]).slice().reverse().slice(0,20);if(tx.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">No notifications</div>';return;}list.innerHTML=tx.map(t=>{const isApproved=t.status==='approved'&&t.type==='deposit';const icon=isApproved?'✅':t.status==='pending'?'⏳':'💰';return `<div class="notif-item ${isApproved?'approved':''}"><div style="font-size:20px">${icon}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${t.desc||t.type}</div><div style="font-size:10px;color:rgba(255,255,255,.5)">${new Date(t.date).toLocaleString()} • ${t.status}</div><div style="font-size:11px;font-weight:800;margin-top:4px;color:${isApproved?'#22c55e':'#f59e0b'}">RS ${t.amount}</div></div></div>`;}).join('');}
 function updateBellBadge(){const badge=document.getElementById('bellBadge');if(!badge||!currentUser)return;const lastRead=Number(localStorage.getItem('diamond_notif_read_'+currentUser.phone)||0);const newTx=(currentUser.transactions||[]).filter(t=>new Date(t.date).getTime()>lastRead).length;if(newTx>0){badge.style.display='grid';badge.textContent=newTx>9?'9+':newTx;}else{badge.style.display='none';}}
 function checkForApprovedDeposit(oldTxs,newTxs){const oldMap={};(oldTxs||[]).forEach(t=>{oldMap[t.date+'_'+t.amount]=t;});(newTxs||[]).forEach(t=>{const key=t.date+'_'+t.amount;const old=oldMap[key];if(t.type==='deposit'&&t.status==='approved'&&(!old||old.status==='pending')){toast('✅ Deposit Approved RS '+t.amount+' • Balance updated!','ok');setTimeout(()=>openNotif(),800);}if(t.type==='deposit'&&t.status==='rejected'&&(!old||old.status==='pending')){toast('❌ Deposit Rejected RS '+t.amount,'err');}});}
 
@@ -583,8 +583,16 @@ function renderApp(){
     <button class="solar-btn-green" onclick="switchPage('deposit')">↓ Deposit<br><small style="font-size:10px;font-weight:400">Add funds</small></button>
     <button class="solar-btn-orange" onclick="switchPage('withdraw')">↑ Withdraw<br><small style="font-size:10px;font-weight:400">Cash out</small></button>
    </div>
+   <div class="solar-card" style="border:1px solid rgba(245,158,11,.15);margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:800;display:flex;gap:6px;align-items:center">⏳ Pending Deposits • Wallet Me</div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);color:#f59e0b">${(currentUser.transactions||[]).filter(t=>t.type==='deposit'&&t.status==='pending').length} pending</span></div>
+    <div>
+      ${(()=>{const deps=(currentUser.transactions||[]).filter(t=>t.type==='deposit'&&t.status==='pending').slice().reverse();if(deps.length===0){return '<div style="text-align:center;padding:16px;color:rgba(255,255,255,.4);font-size:12px">✅ No pending • Approved history me chale gaye</div>';}return deps.map(d=>`<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:#0d1023;border:1px solid rgba(245,158,11,.25);margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:rgba(245,158,11,.15);display:grid;place-items:center">⏳</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS ${d.amount} • ${d.method||'JazzCash'} • <span style="color:#f59e0b">PENDING</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">${new Date(d.date).toLocaleString()}</div></div>${d.screenshot?`<img src="${d.screenshot}" style="width:50px;height:50px;object-fit:cover;border-radius:6px" onclick="window.open('${d.screenshot}','_blank')">`:''}</div>`).join('');})()}
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center">⏳ Sirf pending yahaan • Approve pe history me jayega • Bell pe notification</div>
+   </div>
+
    <div class="solar-card">
-    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ️ Diamond Petrol Wallet Guidelines</div>
+    <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#f59e0b;margin-bottom:10px">ℹ Diamond Petrol Wallet Guidelines</div>
     <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
      <div>✅ Deposit via <b style="color:#fff">Easypaisa or JazzCash</b> • PSO Shell Official Account.</div>
      <div>✅ Withdraw to <b style="color:#fff">Easypaisa, JazzCash, or Bank</b> • KYC must be approved.</div>
@@ -621,18 +629,8 @@ function renderApp(){
         <div style="font-size:11px;color:#f87171;margin-top:6px;text-decoration:underline;cursor:pointer" onclick="removeDepScreenshot()">❌ Remove / Change</div>
       </div>
     </div>
-        <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
-    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">🕒 Pending approval • 5-30 mins • PSO Shell Official</div>
-   </div>
-
-   <div class="solar-card" style="margin-top:12px;border:1px solid rgba(245,158,11,.15)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:800">📋 My Deposit Status • Pending / Approved</div><span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);color:#f59e0b">${(currentUser.transactions||[]).filter(t=>t.type==='deposit').length} deposits</span></div>
-    <div id="myDepositList">
-      ${(()=>{const deps=(currentUser.transactions||[]).filter(t=>t.type==='deposit').slice().reverse();if(deps.length===0){return '<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:12px">No deposits yet • Pehle deposit karo</div>';}return deps.map(d=>`<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:#0d1023;border:1px solid ${d.status==='pending'?'rgba(245,158,11,.25)':d.status==='approved'?'rgba(34,197,94,.25)':'rgba(248,113,113,.25)'};margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:${d.status==='pending'?'rgba(245,158,11,.15)':d.status==='approved'?'rgba(34,197,94,.15)':'rgba(248,113,113,.15)'};display:grid;place-items:center;font-size:18px">${d.status==='pending'?'⏳':d.status==='approved'?'✅':'❌'}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS ${d.amount} • ${d.method||'JazzCash'} • <span style="color:${d.status==='pending'?'#f59e0b':d.status==='approved'?'#22c55e':'#f87171'}">${d.status?.toUpperCase()||'PENDING'}</span></div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">${new Date(d.date).toLocaleString()} • ${d.senderName||''}</div></div>${d.screenshot?`<img src="${d.screenshot}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${d.screenshot}','_blank')">`:''}</div>`).join('');})()}
+    <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
     </div>
-    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center">⏳ Pending = Admin approval ka wait • ✅ Approved = Balance me add • Bell pe notification ayega</div>
-   </div>
-
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
  }else if(currentPage==='withdraw'){
