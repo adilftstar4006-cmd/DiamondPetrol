@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Diamond Petrol - PSO Shell Official - </title>
+<title>Diamond Petrol - PSO Shell Official - Fixed Bottom Nav + KYC + Petrol Plans + Reviews</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -202,24 +202,24 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 <div id="auth" class="auth">
   <div class="glass-card">
     <div class="avatar-wrap"><div class="avatar"><svg viewBox="0 0 100 100"><circle cx="50" cy="32" r="18" fill="white"/><path d="M18 88 Q50 62 82 88 L82 100 L18 100 Z" fill="white"/></svg></div></div>
-    <div class="title"><h1>DIAMOND PETROL</h1><p>• PSO Shell Official •</p></div>
+    <div class="title"><h1>DIAMOND PETROL</h1><p>Glass Login Fixed • PSO Shell Official • No White Glitch</p></div>
     <div id="msg" class="msg"></div>
     <div id="loginForm" class="form active">
       <div class="field"><div class="field-row" id="row-loginPhone"><div class="icon">📱</div><input id="loginPhone" type="tel" placeholder="Phone" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-loginPhone"></div></div>
       <div class="field"><div class="field-row" id="row-loginPass"><div class="icon">🔒</div><input id="loginPass" type="password" placeholder="Password" autocomplete="current-password"><div class="eye" onclick="toggleEye('loginPass',this)">👁️</div></div><div class="field-error" id="err-loginPass"></div></div>
-      <div class="options"><label class="check"><input type="checkbox" id="remember" checked> Remember me</label><span class="forgot" onclick="toast('Admin: telegram id @adiimei','ok')">Forgot Password?</span></div>
+      <div class="options"><label class="check"><input type="checkbox" id="remember" checked> Remember me</label><span class="forgot" onclick="toast('Admin: 03134823393','ok')">Forgot Password?</span></div>
       <button class="login-btn" id="loginBtn" onclick="doLogin()"><div class="spinner"></div><span class="btn-text" id="loginTxt">LOGIN SECURELY</span></button>
       <div class="tabs"><span class="tab active" onclick="switchTab('login')">LOGIN</span><span class="tab" onclick="switchTab('signup')">SIGNUP</span></div>
     </div>
     <div id="signupForm" class="form">
-      <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
+      <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name - adil" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
       <div class="field"><div class="field-row" id="row-signupPhone"><div class="icon">📱</div><input id="signupPhone" type="tel" placeholder="Phone" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-signupPhone"></div></div>
       <div class="field"><div class="field-row" id="row-signupPass"><div class="icon">🔒</div><input id="signupPass" type="password" placeholder="Password (min 6)" autocomplete="new-password"><div class="eye" onclick="toggleEye('signupPass',this)">👁️</div></div><div class="field-error" id="err-signupPass"></div></div>
       <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code (Working - 10% Bonus)" autocomplete="off" style="text-transform:uppercase"></div></div>
       <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 500</span></button>
       <div class="tabs"><span class="tab" onclick="switchTab('login')">LOGIN</span><span class="tab active">SIGNUP</span></div>
     </div>
-    <div class="footer">• Petrol PSO Shell Official • v22</div>
+    <div class="footer">Login Fixed • No White Glitch • Petrol PSO Shell Official • v22</div>
   </div>
 </div>
 
@@ -583,11 +583,22 @@ function renderApp(){
     <input id="depAmount" type="number" placeholder="Enter amount (Min 3000)" class="input-dark" style="margin-bottom:12px">
     <div style="font-size:12px;margin-bottom:6px">👤 Sender Name (Full Legal as per CNIC)</div>
     <input id="depName" type="text" placeholder="Your JazzCash/Easypaisa name" class="input-dark" style="margin-bottom:12px">
-    <div style="font-size:12px;margin-bottom:6px">🖼️ Payment Screenshot</div>
-    <div style="border:1px dashed rgba(255,255,255,.15);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;background:#0d1023"><div style="font-size:20px">⤴️</div><div style="font-size:13px;margin-top:4px">Choose image...</div><input type="file" accept="image/*" style="opacity:0;position:absolute"></div>
+            <div style="font-size:12px;margin-bottom:6px">🖼 Payment Screenshot * (Required)</div>
+    <div style="border:2px dashed #f59e0b;border-radius:12px;padding:18px;text-align:center;margin-bottom:12px;background:#0d1023;position:relative">
+      <input type="file" id="depScreenshot" accept="image/*" onchange="handleDepScreenshot(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:10;width:100%;height:100%">
+      <div id="depUploadPlaceholder">
+        <div style="font-size:28px">📸</div>
+        <div style="font-size:14px;margin-top:8px;font-weight:800;color:#f59e0b">CLICK TO UPLOAD SCREENSHOT</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px">JPG/PNG Max 3MB - Admin ko jayega</div>
+      </div>
+      <div id="depPreview" style="display:none">
+        <img id="depPreviewImg" style="width:100%;max-height:250px;object-fit:contain;border-radius:12px;border:2px solid #22c55e">
+        <div style="font-size:12px;color:#22c55e;margin-top:10px;font-weight:800">✅ Screenshot Selected!</div>
+        <div style="font-size:11px;color:#f87171;margin-top:6px;text-decoration:underline;cursor:pointer" onclick="removeDepScreenshot()">❌ Remove / Change</div>
+      </div>
+    </div>
     <button onclick="submitDeposit()" class="solar-btn-green">✅ Submit Deposit • PSO Official</button>
-    <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:8px">🕒 Pending approval • 5-30 mins • PSO Shell Official</div>
-   </div>
+    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
  }else if(currentPage==='withdraw'){
@@ -836,17 +847,45 @@ function getClaimStatus(inv){
   return {canClaim:false, text:`${hrs}h ${mins}m`, remaining:remaining};
 }
 
+let depositScreenshotBase64=null;
+function handleDepScreenshot(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>3*1024*1024){toast('Max 3MB','err');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    depositScreenshotBase64=e.target.result;
+    const img=document.getElementById('depPreviewImg');
+    const prev=document.getElementById('depPreview');
+    const ph=document.getElementById('depUploadPlaceholder');
+    if(img)img.src=depositScreenshotBase64;
+    if(prev)prev.style.display='block';
+    if(ph)ph.style.display='none';
+    toast('Screenshot selected ✅','ok');
+  };
+  reader.readAsDataURL(file);
+}
+function removeDepScreenshot(){
+  depositScreenshotBase64=null;
+  const inp=document.getElementById('depScreenshot');
+  const prev=document.getElementById('depPreview');
+  const ph=document.getElementById('depUploadPlaceholder');
+  if(inp)inp.value='';
+  if(prev)prev.style.display='none';
+  if(ph)ph.style.display='block';
+}
 function submitDeposit(){
   const a=document.getElementById('depAmount')?.value;const n=document.getElementById('depName')?.value;
   if(!a||!n){toast('Fill amount and full legal name','err');return;}
   if(Number(a)<500){toast('Min deposit 500 RS','err');return;}
+  if(!depositScreenshotBase64){toast('⚠ Screenshot upload karo','err');return;}
   const amt=Number(a);
-  const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending'};
+  const tx={type:'deposit',amount:amt,desc:'Deposit via '+(document.getElementById('depMethod')?.value||'JazzCash')+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:document.getElementById('depMethod')?.value||'JazzCash'};
   db.collection('users').doc(currentUser.phone).update({transactions:firebase.firestore.FieldValue.arrayUnion(tx)}).then(()=>{
     currentUser.transactions=[...(currentUser.transactions||[]),tx];
-    // REFERRAL: Deposit pe bonus milega - L1 10%, L2 5%, L3 2%
+    depositScreenshotBase64=null;
     distributeDepositBonus(amt, currentUser.phone, currentUser.fullName);
-    toast('Deposit RS '+a+' submitted • Pending approval • PSO Official • Referrer ko 10% bonus milega','ok');
+    toast('Deposit RS '+a+' with screenshot submitted','ok');
     switchPage('history');
   }).catch(e=>toast(e.message,'err'));
 }
