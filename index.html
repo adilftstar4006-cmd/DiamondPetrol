@@ -282,7 +282,16 @@ function clearErrors(){document.querySelectorAll('.field-error').forEach(e=>{e.c
 function showFieldError(r,e,m){document.getElementById(r)?.classList.add('error');const er=document.getElementById(e);if(er){er.textContent=m;er.classList.add('show');}}
 function toggleEye(id,el){const i=document.getElementById(id);if(i.type==='password'){i.type='text';el.textContent='🙈';}else{i.type='password';el.textContent='👁️';}}
 function setLoading(b,l,txt){const btn=document.getElementById(b);const t=btn.querySelector('.btn-text');if(l){btn.classList.add('loading');btn.disabled=true;isProcessing=true;t.textContent='Please wait...';}else{btn.classList.remove('loading');btn.disabled=false;isProcessing=false;t.textContent=txt;}}
-function switchPage(t){currentPage=t;document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+t)?.classList.add('active');renderApp();}
+function switchPage(t){
+  try{localStorage.setItem('diamond_last_page', t);}catch(e){}
+  currentPage=t;
+  document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-'+t)?.classList.add('active');
+  renderApp();
+  if(t==='wallet'){
+    setTimeout(function(){try{renderWalletPending();}catch(e){}},150);
+  }
+}
 function openNotif(){var p=document.getElementById('notifPanel');var o=document.getElementById('notifOverlay');if(p)p.classList.add('show');if(o)o.classList.add('show');renderNotifList();if(currentUser&&currentUser.phone)localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();}
 function closeNotif(){var p=document.getElementById('notifPanel');var o=document.getElementById('notifOverlay');if(p)p.classList.remove('show');if(o)o.classList.remove('show');}
 function markAllRead(){if(currentUser&&currentUser.phone)localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();toast('All marked read','ok');}
@@ -303,120 +312,85 @@ function checkForApprovedDeposit(oldTxs,newTxs){
 }
 let walletDepositCache=[], walletWithdrawCache=[];
 let walletPendingUnsub1=null, walletPendingUnsub2=null;
-
 function listenWalletPending(phone){
-  if(!phone)return;
-  console.log('Listening wallet pending for', phone);
-  
-  // Clean old listeners
+  if(!phone) return;
   if(walletPendingUnsub1){walletPendingUnsub1(); walletPendingUnsub1=null;}
   if(walletPendingUnsub2){walletPendingUnsub2(); walletPendingUnsub2=null;}
-  
-  // Listen to user's own depositRequests - NO composite index needed, filter status client side
   try{
     walletPendingUnsub1=db.collection('depositRequests').where('phone','==',phone).onSnapshot(function(snap){
       walletDepositCache=[];
       snap.forEach(function(doc){
         var d=doc.data();
-        if(d.status==='pending') walletDepositCache.push(d);
+        if(d && d.status==='pending') walletDepositCache.push(d);
       });
-      console.log('Deposit cache', walletDepositCache.length);
       renderWalletPending();
-    }, function(err){
-      console.error('Deposit listen error', err);
-      // Fallback: try get once
-      db.collection('depositRequests').where('phone','==',phone).get().then(function(snap){
-        walletDepositCache=[];
-        snap.forEach(function(doc){
-          var d=doc.data();
-          if(d.status==='pending') walletDepositCache.push(d);
-        });
-        renderWalletPending();
-      });
     });
-  }catch(e){console.error(e);}
-  
+  }catch(e){}
   try{
     walletPendingUnsub2=db.collection('withdrawRequests').where('phone','==',phone).onSnapshot(function(snap){
       walletWithdrawCache=[];
       snap.forEach(function(doc){
         var d=doc.data();
-        if(d.status==='pending') walletWithdrawCache.push(d);
+        if(d && d.status==='pending') walletWithdrawCache.push(d);
       });
-      console.log('Withdraw cache', walletWithdrawCache.length);
       renderWalletPending();
-    }, function(err){
-      console.error('Withdraw listen error', err);
-      db.collection('withdrawRequests').where('phone','==',phone).get().then(function(snap){
-        walletWithdrawCache=[];
-        snap.forEach(function(doc){
-          var d=doc.data();
-          if(d.status==='pending') walletWithdrawCache.push(d);
-        });
-        renderWalletPending();
-      });
     });
-  }catch(e){console.error(e);}
+  }catch(e){}
 }
-
 
 function renderWalletPending(){
   var list=document.getElementById('walletPendingList');
   var countEl=document.getElementById('pendingCountWallet');
-  if(!list)return;
-  
+  if(!list) return;
   var pending=[];
   var seenIds={};
-  
-  // 1. From user's transactions (old way)
   for(var i=0;i<(currentUser.transactions||[]).length;i++){
     var t=currentUser.transactions[i];
-    if(t.status==='pending'){
+    if(t && t.status==='pending'){
       var id=t.depositId||t.withdrawId||t.date+'_'+t.amount+'_'+t.type;
       if(!seenIds[id]){
         seenIds[id]=true;
-        pending.push({type:t.type, amount:t.amount, method:t.method||'JazzCash', account:t.account||'', date:t.date, depositId:t.depositId, withdrawId:t.withdrawId, source:'transactions'});
+        pending.push({type:t.type, amount:t.amount, method:t.method||'JazzCash', account:t.account||'', date:t.date, depositId:t.depositId, withdrawId:t.withdrawId, senderName:t.senderName||'', status:t.status});
       }
     }
   }
-  
-  // 2. From depositRequests (new - so pending shows even if transactions array missed)
   for(var d=0;d<walletDepositCache.length;d++){
     var dep=walletDepositCache[d];
     var depId=dep.id||dep.depositId;
     if(!seenIds[depId]){
       seenIds[depId]=true;
-      pending.push({type:'deposit', amount:dep.amount, method:dep.method||'JazzCash', account:'', date:dep.date, depositId:depId, source:'depositRequests'});
+      pending.push({type:'deposit', amount:dep.amount, method:dep.method||'JazzCash', account:'', date:dep.date, depositId:depId, senderName:dep.senderName||'', status:dep.status||'pending'});
     }
   }
-  
-  // 3. From withdrawRequests
   for(var w=0;w<walletWithdrawCache.length;w++){
     var wd=walletWithdrawCache[w];
     var wdId=wd.id||wd.withdrawId;
     if(!seenIds[wdId]){
       seenIds[wdId]=true;
-      pending.push({type:'withdraw', amount:wd.amount, method:wd.method||'', account:wd.account||'', date:wd.date, withdrawId:wdId, source:'withdrawRequests'});
+      pending.push({type:'withdraw', amount:wd.amount, method:wd.method||'', account:wd.account||'', date:wd.date, withdrawId:wdId, senderName:'', status:wd.status||'pending'});
     }
   }
-  
-  // Sort latest first
   pending.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
-  
-  if(countEl)countEl.textContent=pending.length+' pending';
+  if(countEl) countEl.textContent=pending.length+' pending';
   if(pending.length===0){
-    list.innerHTML='<div style="text-align:center;padding:16px;color:rgba(255,255,255,.4);font-size:12px">✅ No pending • Deposit karo to yahan dikhega • Jab tak approve nahi hota yahan rahega • History me nahi jayega</div>';
+    list.innerHTML='<div style="text-align:center;padding:16px;color:rgba(255,255,255,.4);font-size:12px">✅ No pending • Deposit/Withdraw karo to yahan dikhega • Jab tak approve nahi hota yahan rahega</div>';
     return;
   }
-  var html='';
+  // Table like reference image - Date, Detail, Amount, Status
+  var html='<div style="background:#0d1023;border-radius:12px;border:1px solid rgba(255,255,255,.08);overflow:hidden">';
+  html+='<div style="display:grid;grid-template-columns:1fr 1.5fr .8fr .7fr;gap:8px;padding:10px 12px;background:rgba(255,255,255,.05);font-size:11px;font-weight:800;color:rgba(255,255,255,.7);border-bottom:1px solid rgba(255,255,255,.08)"><div>Date</div><div>Withdraw/Deposit Detail</div><div>Amount</div><div>Status</div></div>';
   for(var k=0;k<pending.length;k++){
     var d=pending[k];
     var isDep=d.type==='deposit';
-    var icon=isDep?'⏳':'💸';
-    var border=isDep?'rgba(245,158,11,.25)':'rgba(96,165,250,.25)';
-    var bg=isDep?'rgba(245,158,11,.15)':'rgba(96,165,250,.15)';
-    html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid '+border+';margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:8px;background:'+bg+';display:grid;place-items:center;font-size:18px">'+icon+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">RS '+d.amount+' • '+(d.method||'JazzCash')+(d.account?' ('+d.account+')':'')+' • <span style="color:#f59e0b">PENDING</span></div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(d.date).toLocaleString()+' • Wallet me rahega jab tak approve nahi hota</div></div></div>';
+    var dateStr=new Date(d.date).toLocaleDateString('en-GB').replace(/\//g,'-')+'<br>'+new Date(d.date).toLocaleTimeString();
+    var detail=isDep ? (d.method||'JazzCash')+'<br>'+(d.senderName||'') : (d.method||'EasyPaisa')+'<br>'+(d.account||'')+'<br>'+(currentUser.fullName||'');
+    var amt='₹ '+d.amount+(isDep?'':'<br>('+d.amount+')')+(isDep?'':'<br>ADS<br>Wallet');
+    var statusColor=d.status==='pending'?'#a78bfa':'#22c55e';
+    var statusBg=d.status==='pending'?'rgba(167,139,250,.2)':'rgba(34,197,94,.2)';
+    var statusText=d.status==='pending'?'PENDING':'APPROVED';
+    html+='<div style="display:grid;grid-template-columns:1fr 1.5fr .8fr .7fr;gap:8px;padding:12px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;align-items:start"><div style="font-size:11px;color:rgba(255,255,255,.8)">'+dateStr+'</div><div style="font-size:11px">'+detail+'</div><div style="font-weight:700">'+amt+'</div><div><span style="background:'+statusBg+';color:'+statusColor+';padding:4px 8px;border-radius:12px;font-size:10px;font-weight:800;border:1px solid '+statusColor+'">'+statusText+'</span></div></div>';
   }
+  html+='</div>';
   list.innerHTML=html;
 }
 
@@ -595,17 +569,7 @@ async function doLogin(){
  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
-function showApp(){
-  if(!currentUser)return;
-  document.getElementById('auth').style.display='none';
-  document.getElementById('app').classList.add('active');
-  document.getElementById('topName').textContent=currentUser.fullName||'meai';
-  document.getElementById('topAvatar').textContent=(currentUser.fullName||'M')[0].toUpperCase();
-  renderApp();
-  try{startListener();}catch(e){}
-  try{if(currentUser && currentUser.phone){listenWalletPending(currentUser.phone);}}catch(e){}
-  setTimeout(function(){updateBellBadge();renderWalletPending();},500);
-}
+function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}renderApp();startListener();try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}setTimeout(function(){updateBellBadge();renderWalletPending();},500);}
 
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
@@ -743,7 +707,9 @@ function renderApp(){
     </div>
    </div>
   `;
- }else if(currentPage==='deposit'){
+ 
+  setTimeout(function(){try{renderWalletPending();}catch(e){}},150);
+}else if(currentPage==='deposit'){
   c.innerHTML=`
    <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">💳 Diamond Wallet</div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"><button class="solar-btn-green">↓ Deposit<br><small>Add funds</small></button><button class="solar-btn-orange" style="opacity:.6" onclick="switchPage('withdraw')">↑ Withdraw</button></div>
@@ -1031,28 +997,26 @@ function getClaimStatus(inv){
 let depositScreenshotBase64=null;
 function handleDepScreenshot(input){
   const file=input.files[0];
-  if(!file)return;
-  const MAX_SIZE=2*1024*1024; // 2MB
-  if(file.size>MAX_SIZE){toast('❌ File '+(file.size/1024/1024).toFixed(2)+'MB • Max 2MB','err');input.value='';return;}
-  if(!file.type.startsWith('image/')){toast('❌ Only JPG/PNG','err');input.value='';return;}
-  toast('⏳ Compressing...','ok');
+  if(!file) return;
+  const MAX_SIZE=2*1024*1024;
+  if(file.size>MAX_SIZE){toast('❌ Max 2MB • '+(file.size/1024/1024).toFixed(2)+'MB hai','err');input.value='';return;}
+  if(!file.type.startsWith('image/')){toast('❌ Only image allowed','err');input.value='';return;}
   const reader=new FileReader();
   reader.onload=function(e){
     const img=new Image();
     img.onload=function(){
-      const MAX_W=1024, MAX_H=1024;
       let w=img.width, h=img.height;
+      const MAX_W=1024, MAX_H=1024;
       if(w>MAX_W||h>MAX_H){
         if(w>h){h=Math.round(h*MAX_W/w); w=MAX_W;}else{w=Math.round(w*MAX_H/h); h=MAX_H;}
       }
-      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const compressed=canvas.toDataURL('image/jpeg',0.7);
-      depositScreenshotBase64=compressed;
-      document.getElementById('depPreviewImg').src=compressed;
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      depositScreenshotBase64=c.toDataURL('image/jpeg',0.7);
+      document.getElementById('depPreviewImg').src=depositScreenshotBase64;
       document.getElementById('depPreview').style.display='block';
       document.getElementById('depUploadPlaceholder').style.display='none';
-      toast('✅ Screenshot '+(file.size/1024).toFixed(0)+'KB → '+(Math.round(compressed.length*0.75)/1024).toFixed(0)+'KB','ok');
+      toast('✅ Screenshot '+(file.size/1024).toFixed(0)+'KB → '+(Math.round(depositScreenshotBase64.length*0.75)/1024).toFixed(0)+'KB','ok');
     };
     img.src=e.target.result;
   };
@@ -1082,20 +1046,20 @@ function submitDeposit(){
   if(!depositScreenshotBase64){toast('⚠ Screenshot upload karo','err');isDepositSubmitting=false;if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit';btn.style.opacity='1';}return;}
   
   var amt=Number(a);
-  // Only block exact same amount+method within 10 seconds (double click), allow different amounts
+  // Only block if SAME amount+method within 10 seconds (double click), not different amounts
   var now=Date.now();
   var duplicateSame=(currentUser.transactions||[]).some(function(t){
     return t.status==='pending' && t.type==='deposit' && Number(t.amount)===amt && (t.method||'')===method && (now - new Date(t.date).getTime()) < 10000;
   });
   if(duplicateSame){
-    toast('⚠ Same RS '+amt+' • '+method+' 10 sec pehle hi pending hai • Thora wait karo','err');
+    toast('⚠ RS '+amt+' abhi 10 sec pehle hi pending kiya hai • Thora wait karo','err');
     isDepositSubmitting=false;
     if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}
     return;
   }
   
   const depositId=Date.now().toString()+'_'+currentUser.phone+'_'+Math.random().toString(36).substr(2,5);
-  const tx={type:'deposit',amount:amt,desc:'Deposit via '+method+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',screenshot:depositScreenshotBase64,senderName:n,method:method,depositId:depositId,hasScreenshot:true};
+  const tx={type:'deposit',amount:amt,desc:'Deposit via '+method+' - Pending - Sender: '+n, date:new Date().toISOString(),status:'pending',senderName:n,method:method,depositId:depositId,hasScreenshot:true}; // No screenshot in user doc to avoid 1MB limit
   const depDoc={id:depositId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amt,method:method,senderName:n,screenshot:depositScreenshotBase64,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||currentUser.fullName||'',kycCnic:currentUser.kycData?.cnic||''};
   
   db.collection('depositRequests').doc(depositId).set(depDoc).then(function(){
@@ -1106,7 +1070,7 @@ function submitDeposit(){
     document.getElementById('depName').value='';
     var prev=document.getElementById('depPreview'); if(prev)prev.style.display='none';
     var ph=document.getElementById('depUploadPlaceholder'); if(ph)ph.style.display='block';
-    toast('✅ Deposit RS '+a+' submitted • Wallet me pending rahega jab tak approve nahi hota','ok');
+    toast('✅ Deposit RS '+a+' submitted • Wallet me pending dikhega','ok');
     isDepositSubmitting=false;
     if(btn){btn.disabled=false;btn.innerHTML='✅ Submit Deposit • PSO Official';btn.style.opacity='1';}
     setTimeout(function(){switchPage('wallet');},100);
@@ -1116,7 +1080,6 @@ function submitDeposit(){
     toast('❌ '+e.message,'err');
   });
 }
-
 
 
 async function submitWithdraw(){
@@ -1157,7 +1120,19 @@ async function submitKycOLD_DUPLICATE(){
   toast('KYC Submitted • Full Legal Name: '+legalName+' • CNIC: '+cnic+' • Pending 24h • Admin will approve','ok');renderApp();
  }catch(e){toast(e.message,'err');}
 }
-async function loadCurrent(){const p=localStorage.getItem('diamond_current_glass_v22');if(!p)return;try{const d=await db.collection('users').doc(p).get();if(d.exists){currentUser=d.data();showApp();}}catch(e){}}
+async function loadCurrent(){
+  const p=localStorage.getItem('diamond_current_glass_v22');
+  if(!p) return;
+  try{
+    const d=await db.collection('users').doc(p).get();
+    if(d.exists){
+      currentUser=d.data();
+      showApp();
+    }
+  }catch(e){
+    console.error('loadCurrent error', e);
+  }
+}
 function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;var fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){var oldTxs=currentUser.transactions||[];var newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;renderApp();updateBellBadge();renderWalletPending();}});}
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
