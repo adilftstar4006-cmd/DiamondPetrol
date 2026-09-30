@@ -503,54 +503,185 @@ async function saveUser(){
     const updates={fullName:legalName,balance:Number(document.getElementById('eBalance').value||0),totalDeposit:Number(document.getElementById('eDeposit').value||0),kycStatus:document.getElementById('eKyc').value,referralCode:document.getElementById('eRefCode').value.trim().toUpperCase(),kycData:{legalName:legalName,cnic:cnic,father:document.getElementById('eFather').value.trim(),dob:document.getElementById('eDob').value,addr:document.getElementById('eAddr').value.trim(),submittedAt:new Date().toISOString()}};
     try{updates.activeInvests=JSON.parse(document.getElementById('ePlans').value||'[]');}catch(e){}
     await db.collection('users').doc(editingPhone).update(updates);
-    alert('✅ Updated '+editingPhone+' • Legal: '+legalName+' • CNIC: '+cnic);closeModal();
-  }catch(e){alert('Error: '+e.message);}
+    toast('✅ Updated '+editingPhone+' • Legal: '+legalName+' • CNIC: '+cnic,'ok');closeModal();
+  }catch(e){toast('Error: '+e.message,\'err\');}
 }
-async function approveKyc(){if(!editingPhone)return;try{await db.collection('users').doc(editingPhone).update({kycStatus:'approved'});alert('✅ KYC Approved • Withdraw Unlocked');closeModal();}catch(e){alert(e.message);}}
-async function quickApproveKyc(phone){if(!confirm('Approve KYC for '+phone+'?'))return;try{await db.collection('users').doc(phone).update({kycStatus:'approved'});alert('Approved');}catch(e){alert(e.message);}}
-async function rejectKyc(phone){if(!confirm('Reject KYC '+phone+'?'))return;try{await db.collection('users').doc(phone).update({kycStatus:'rejected'});alert('Rejected');}catch(e){alert(e.message);}}
-async function deleteUser(){if(!editingPhone)return;if(!confirm('Delete '+editingPhone+'?'))return;try{await db.collection('users').doc(editingPhone).delete();alert('Deleted');closeModal();}catch(e){alert(e.message);}}
-async function quickDelete(phone){if(!confirm('Delete '+phone+'?'))return;try{await db.collection('users').doc(phone).delete();alert('Deleted '+phone);}catch(e){alert(e.message);}}
+async function approveKyc(){
+  if(!editingPhone)return;
+  var phone=editingPhone;
+  var legal=document.getElementById('eLegalName').value.trim();
+  var cnic=document.getElementById('eCnic').value.trim();
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='🪪 Approve KYC (Edit Modal) • '+phone;
+  sub.textContent='Legal & CNIC verify';
+  body.innerHTML=`
+    <div class="info-row highlight"><span class="label">Legal Name</span><span class="value" style="color:#f59e0b">${legal}</span></div>
+    <div class="info-row highlight"><span class="label">CNIC</span><span class="value">${cnic}</span></div>
+    <div class="info-row"><span class="label">Phone</span><span class="value">${phone}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmApproveKycEdit()" style="padding:12px;border-radius:10px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;border:none;font-weight:800;cursor:pointer">✅ Confirm Approve KYC</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmApproveKycEdit(){
+  closeApprovalModal();
+  try{await db.collection('users').doc(editingPhone).update({kycStatus:'approved'});toast('✅ KYC Approved • Withdraw Unlocked','ok');closeModal();}catch(e){toast(e.message,'err');}
+}
+async function quickApproveKyc(phone){
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  if(!u){toast('User not found','err');return;}
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='🪪 Approve KYC • '+phone;
+  sub.textContent='Legal name & CNIC check • Tarteeb se';
+  body.innerHTML=`
+    <div class="info-row"><span class="label">01 • Phone</span><span class="value">${u.phone}</span></div>
+    <div class="info-row"><span class="label">02 • Full Name</span><span class="value">${u.fullName||''}</span></div>
+    <div class="info-row highlight"><span class="label">03 • Legal Name (CNIC)</span><span class="value" style="color:#f59e0b">${u.kycData?.legalName||''}</span></div>
+    <div class="info-row highlight"><span class="label">04 • CNIC</span><span class="value">${u.kycData?.cnic||''}</span></div>
+    <div class="info-row"><span class="label">05 • Father Name</span><span class="value">${u.kycData?.father||''}</span></div>
+    <div class="info-row"><span class="label">06 • DOB</span><span class="value">${u.kycData?.dob||''}</span></div>
+    <div class="info-row"><span class="label">07 • Address</span><span class="value">${u.kycData?.addr||''}</span></div>
+    <div class="info-row"><span class="label">08 • Current KYC Status</span><span class="value">${u.kycStatus||''}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmQuickApproveKyc('${phone}')" style="padding:12px;border-radius:10px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;border:none;font-weight:800;cursor:pointer">✅ Confirm Approve KYC</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmQuickApproveKyc(phone){
+  closeApprovalModal();
+  try{await db.collection('users').doc(phone).update({kycStatus:'approved'});toast('✅ KYC Approved • '+phone,'ok');}catch(e){toast(e.message,'err');}
+}
+async function rejectKyc(phone){
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='❌ Reject KYC • '+phone;
+  sub.textContent='Reason check';
+  body.innerHTML=`
+    <div class="info-row"><span class="label">Phone</span><span class="value">${phone}</span></div>
+    <div class="info-row highlight"><span class="label">Legal Name</span><span class="value">${u?.kycData?.legalName||''}</span></div>
+    <div class="info-row"><span class="label">CNIC</span><span class="value">${u?.kycData?.cnic||''}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmRejectKyc('${phone}')" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">❌ Confirm Reject KYC</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmRejectKyc(phone){
+  closeApprovalModal();
+  try{await db.collection('users').doc(phone).update({kycStatus:'rejected'});toast('❌ KYC Rejected • '+phone,'ok');}catch(e){toast(e.message,'err');}
+}
+async function deleteUser(){
+  if(!editingPhone)return;
+  var phone=editingPhone;
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='🗑 Delete User • '+phone;
+  sub.textContent='This cannot be undone';
+  body.innerHTML=`
+    <div class="info-row highlight" style="border-color:rgba(248,113,113,.3)"><span class="label">Phone to Delete</span><span class="value" style="color:#f87171">${phone}</span></div>
+    <div style="padding:12px;background:rgba(248,113,113,.1);border-radius:10px;font-size:11px;color:#fca5a5;margin-top:10px">⚠️ All user data, balance, transactions will be permanently deleted!</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmDeleteUser('${phone}')" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">🗑 Confirm Delete</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmDeleteUser(phone){
+  closeApprovalModal();
+  try{await db.collection('users').doc(phone).delete();toast('🗑 Deleted • '+phone,'ok');closeModal();}catch(e){toast(e.message,'err');}
+}
+async function quickDelete(phone){
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='🗑 Quick Delete • '+phone;
+  sub.textContent='Permanent delete';
+  body.innerHTML=`
+    <div class="info-row highlight" style="border-color:rgba(248,113,113,.3)"><span class="label">Delete</span><span class="value" style="color:#f87171">${phone}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmQuickDelete('${phone}')" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">🗑 Confirm Delete</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmQuickDelete(phone){
+  closeApprovalModal();
+  try{await db.collection('users').doc(phone).delete();toast('🗑 Deleted • '+phone,'ok');}catch(e){toast(e.message,'err');}
+}
 
-async function clearAllUsers(){
-  if(!confirm('⚠️ CLEAR ALL DATA?\n\nThis will DELETE ALL USERS from Firebase adiimei-invest/users collection!\nAll old data will be cleared for fresh start!\n\nAre you sure?'))return;
-  if(!confirm('Second Confirm: Really delete ALL users? This cannot be undone!\nType YES - All data will be cleared!'))return;
-  const pwd=prompt('Enter admin password again to confirm CLEAR ALL DATA: (Diamond123 / 03313394007 / Admin123)');
-  if(!ADMIN_PASSWORDS.includes(pwd)){alert('❌ Wrong password - Clear cancelled');return;}
-  document.getElementById('clearStatus').textContent='Clearing...';
-  try{
-    const snap=await db.collection('users').get();
-    if(snap.empty){alert('✅ Already empty - No data to clear - Fresh start already done!');document.getElementById('clearStatus').textContent='Already empty ✅';return;}
-    let count=0;
-    const batchSize=400;
-    let docs=[...snap.docs];
-    while(docs.length>0){
-      const batch=db.batch();
-      const chunk=docs.splice(0,batchSize);
-      chunk.forEach(d=>{batch.delete(d.ref);count++;});
-      await batch.commit();
-    }
-    document.getElementById('clearStatus').textContent='Cleared '+count+' users ✅ Fresh start!';
-    alert('✅ SUCCESS! Cleared '+count+' users from Firebase!\n\nNow admin panel shows 0 users - Fresh start complete!\nNew users will appear here when they signup from main app v22.');
-  }catch(e){
-    document.getElementById('clearStatus').textContent='Error: '+e.message;
-    alert('Error clearing: '+e.message+'\n\nTry manually: Firebase Console → Firestore → users → Delete all documents');
-  }
-}
+
 
 async function approveTx(phone,idx,amt,type){
-  if(!confirm('Approve '+type+' RS '+amt+' for '+phone+'?'))return;
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  if(!u){toast('User not found','err');return;}
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='💰 Approve Tx • RS '+amt+' • '+type;
+  sub.textContent=phone;
+  body.innerHTML=`
+    <div class="info-row"><span class="label">Phone</span><span class="value">${phone}</span></div>
+    <div class="info-row highlight"><span class="label">Amount</span><span class="value">RS ${amt} • ${type}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmApproveTx('${phone}',${idx},${amt},'${type}')" style="padding:12px;border-radius:10px;background:#22c55e;color:#000;border:none;font-weight:800;cursor:pointer">✅ Confirm Approve</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmApproveTx(phone,idx,amt,type){
+  closeApprovalModal();
   try{
-    const u=allUsers.find(x=>x.phone===phone);const txs=[...(u.transactions||[])];txs[idx].status='approved';
-    let upd={transactions:txs};if(type==='deposit'){upd.balance=(u.balance||0)+Number(amt);upd.totalDeposit=(u.totalDeposit||0)+Number(amt);}
-    await db.collection('users').doc(phone).update(upd);alert('Approved RS '+amt);
-  }catch(e){alert(e.message);}
+    var u=allUsers.find(function(x){return x.phone===phone;});var txs=(u.transactions||[]).slice();txs[idx].status='approved';
+    var upd={transactions:txs};if(type==='deposit'){upd.balance=(u.balance||0)+Number(amt);upd.totalDeposit=(u.totalDeposit||0)+Number(amt);}
+    await db.collection('users').doc(phone).update(upd);toast('✅ Approved RS '+amt,'ok');
+  }catch(e){toast(e.message,'err');}
 }
 async function rejectTx(phone,idx){
-  if(!confirm('Reject for '+phone+'?'))return;
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var tx=u.transactions[idx];
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='❌ Reject Tx • '+phone;
+  sub.textContent='RS '+(tx?.amount||'')+' • '+ (tx?.type||'');
+  body.innerHTML=`
+    <div class="info-row"><span class="label">Phone</span><span class="value">${phone}</span></div>
+    <div class="info-row highlight"><span class="label">Amount</span><span class="value" style="color:#f87171">RS ${tx?.amount||''} • ${tx?.type||''}</span></div>
+    ${tx?.type==='withdraw'?`<div style="padding:8px;background:rgba(34,197,94,.1);border-radius:8px;font-size:10px;color:#22c55e">Refund RS ${tx?.amount||''} will be added back</div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+      <button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmRejectTx('${phone}',${idx})" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">❌ Confirm Reject</button>
+    </div>
+  `;
+  modal.classList.add('active');
+}
+async function confirmRejectTx(phone,idx){
+  closeApprovalModal();
   try{
-    const u=allUsers.find(x=>x.phone===phone);const txs=[...(u.transactions||[])];const amt=txs[idx]?.amount;const type=txs[idx]?.type;let refund=0;if(type==='withdraw')refund=Number(amt);txs[idx].status='rejected';let upd={transactions:txs};if(refund>0)upd.balance=(u.balance||0)+refund;await db.collection('users').doc(phone).update(upd);alert('Rejected'+(refund>0?' Refunded RS '+refund:''));
-  }catch(e){alert(e.message);}
+    var u=allUsers.find(function(x){return x.phone===phone;});var txs=(u.transactions||[]).slice();var amt=txs[idx]?.amount;var type=txs[idx]?.type;var refund=0;if(type==='withdraw')refund=Number(amt);txs[idx].status='rejected';var upd={transactions:txs};if(refund>0)upd.balance=(u.balance||0)+refund;await db.collection('users').doc(phone).update(upd);toast('❌ Rejected'+(refund>0?' Refunded RS '+refund:''),'ok');
+  }catch(e){toast(e.message,'err');}
 }
 window.addEventListener('load',checkSession);
 </script>
