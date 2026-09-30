@@ -186,31 +186,153 @@ function renderKyc(){
 
 function renderPending(){
   var div=document.getElementById('pendingList');
-  var all=[].concat(depositCache.map(function(d){return {type:'deposit',data:d}}), withdrawCache.map(function(d){return {type:'withdraw',data:d}}));
+  // New collections
+  var allNew=[].concat(depositCache.map(function(d){return {type:'deposit',data:d,source:'new'}}), withdrawCache.map(function(d){return {type:'withdraw',data:d,source:'new'}}));
+  // Old pending from users.transactions (purana system)
+  var oldPending=[];
+  for(var u=0;u<allUsers.length;u++){
+    var user=allUsers[u];
+    var txs=user.transactions||[];
+    for(var t=0;t<txs.length;t++){
+      var tx=txs[t];
+      if(tx.status==='pending'){
+        // Check if already in new cache (by depositId/withdrawId)
+        var already=false;
+        if(tx.depositId){
+          for(var d=0;d<depositCache.length;d++){if(depositCache[d].id===tx.depositId){already=true;break;}}
+        }
+        if(tx.withdrawId){
+          for(var w=0;w<withdrawCache.length;w++){if(withdrawCache[w].id===tx.withdrawId){already=true;break;}}
+        }
+        if(!already){
+          oldPending.push({type:tx.type, data:{id:tx.depositId||tx.withdrawId||user.phone+'_'+t, phone:user.phone, fullName:user.fullName||'', amount:tx.amount, method:tx.method||'', senderName:tx.senderName||'', account:tx.account||'', fee:tx.fee||0, receive:tx.receive||0, date:tx.date, screenshot:tx.screenshot||'', kycName:user.kycData?.legalName||'', kycCnic:user.kycData?.cnic||'', desc:tx.desc||''}, source:'old', userPhone:user.phone, txIndex:t});
+        }
+      }
+    }
+  }
+  var all=allNew.concat(oldPending);
   all.sort(function(a,b){return new Date(b.data.date)-new Date(a.data.date);});
   document.getElementById('pendingTx').textContent=all.length;
-  if(all.length===0){div.innerHTML='<div style="padding:20px;text-align:center;color:rgba(255,255,255,.4)">✅ No pending</div>';return;}
+  if(all.length===0){div.innerHTML='<div style="padding:20px;text-align:center;color:rgba(255,255,255,.4)">✅ No pending • Purane + Naye dono check kiye</div>';return;}
   var html='';
   for(var i=0;i<all.length;i++){
     var p=all[i];
     if(p.type==='deposit'){
       var d=p.data;
-      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid rgba(34,197,94,.25);margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(245,158,11,.15);display:grid;place-items:center">⏳</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+d.phone+' • RS '+d.amount+' • '+d.method+' • '+d.senderName+'</div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(d.date).toLocaleString()+'</div></div>'+(d.screenshot?'<img src="'+d.screenshot+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="window.open(\''+d.screenshot+'\',\'_blank\')">':'')+'<div style="display:flex;gap:6px"><button class="btn btn-approve" onclick="openDepositModal(\''+d.id+'\')">View & Approve</button><button class="btn btn-del" onclick="openRejectDepositModal(\''+d.id+'\')">Reject</button></div></div>';
+      var isOld=p.source==='old';
+      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid '+(isOld?'rgba(245,158,11,.4)':'rgba(34,197,94,.25)')+';margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(245,158,11,.15);display:grid;place-items:center">⏳<br><small style="font-size:7px">'+(isOld?'OLD':'NEW')+'</small></div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+d.phone+' • RS '+d.amount+' • '+(d.method||'JazzCash')+' • '+(d.senderName||d.desc||'')+' '+(isOld?'<span style="background:#f59e0b;color:#000;padding:1px 4px;border-radius:4px;font-size:8px">OLD PENDING</span>':'')+'</div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(d.date).toLocaleString()+' • '+(d.fullName||'')+'</div></div>'+(d.screenshot?'<img src="'+d.screenshot+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="window.open(\''+d.screenshot+'\',\'_blank\')">':d.hasScreenshot?'<span style="font-size:9px;color:#f59e0b">📸 Has screenshot</span>':'')+'<div style="display:flex;gap:6px">'+(isOld?'<button class="btn btn-approve" onclick="approveOldDeposit(\''+p.userPhone+'\','+p.txIndex+','+d.amount+')">Approve OLD</button><button class="btn btn-del" onclick="rejectOldDeposit(\''+p.userPhone+'\','+p.txIndex+')">Reject OLD</button>':'<button class="btn btn-approve" onclick="openDepositModal(\''+d.id+'\')">View & Approve</button><button class="btn btn-del" onclick="openRejectDepositModal(\''+d.id+'\')">Reject</button>')+'</div></div>';
     }else{
       var w=p.data;
-      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid rgba(96,165,250,.25);margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(96,165,250,.15);display:grid;place-items:center">💸</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+w.phone+' • RS '+w.amount+' • '+w.method+' '+w.account+'</div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(w.date).toLocaleString()+'</div></div><div style="display:flex;gap:6px"><button class="btn btn-approve" style="background:#60a5fa" onclick="openWithdrawModal(\''+w.id+'\')">View & Approve</button><button class="btn btn-del" onclick="openRejectWithdrawModal(\''+w.id+'\')">Reject</button></div></div>';
+      var isOldW=p.source==='old';
+      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid '+(isOldW?'rgba(96,165,250,.4)':'rgba(96,165,250,.25)')+';margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(96,165,250,.15);display:grid;place-items:center">💸<br><small style="font-size:7px">'+(isOldW?'OLD':'NEW')+'</small></div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+w.phone+' • RS '+w.amount+' • '+(w.method||'')+' '+(w.account||'')+' '+(isOldW?'<span style="background:#60a5fa;color:#000;padding:1px 4px;border-radius:4px;font-size:8px">OLD</span>':'')+'</div><div style="font-size:10px;color:rgba(255,255,255,.5)">'+new Date(w.date).toLocaleString()+'</div></div><div style="display:flex;gap:6px">'+(isOldW?'<button class="btn btn-approve" style="background:#60a5fa" onclick="approveOldWithdraw(\''+p.userPhone+'\','+p.txIndex+','+w.amount+')">Approve OLD</button><button class="btn btn-del" onclick="rejectOldWithdraw(\''+p.userPhone+'\','+p.txIndex+','+w.amount+')">Reject OLD</button>':'<button class="btn btn-approve" style="background:#60a5fa" onclick="openWithdrawModal(\''+w.id+'\')">View & Approve</button><button class="btn btn-del" onclick="openRejectWithdrawModal(\''+w.id+'\')">Reject</button>')+'</div></div>';
     }
   }
   div.innerHTML=html;
 }
+// Old pending approve/reject functions
+async function approveOldDeposit(phone, idx, amount){
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var tx=u.transactions[idx];
+  title.textContent='💰 Approve OLD Deposit • RS '+amount;
+  sub.textContent=phone+' • Old system pending';
+  body.innerHTML='<div class="info-row"><span class="label">Phone</span><span class="value">'+phone+'</span></div><div class="info-row highlight"><span class="label">Amount</span><span class="value" style="color:#22c55e">RS '+amount+'</span></div><div class="info-row"><span class="label">Desc</span><span class="value">'+(tx.desc||'')+'</span></div><div class="info-row"><span class="label">Date</span><span class="value">'+new Date(tx.date).toLocaleString()+'</span></div>'+(tx.screenshot?'<div class="screenshot-box"><img src="'+tx.screenshot+'"></div>':'')+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;cursor:pointer">Cancel</button><button onclick="confirmApproveOldDeposit(\''+phone+'\','+idx+','+amount+')" style="padding:12px;border-radius:10px;background:#22c55e;color:#000;border:none;font-weight:800;cursor:pointer">✅ Confirm Approve OLD</button></div>';
+  modal.classList.add('active');
+}
+async function confirmApproveOldDeposit(phone, idx, amount){
+  closeApprovalModal();
+  try{
+    var u=allUsers.find(function(x){return x.phone===phone;});
+    var txs=u.transactions.slice();
+    txs[idx].status='approved';
+    var newBal=(u.balance||0)+Number(amount);
+    var newTotalDep=(u.totalDeposit||0)+Number(amount);
+    await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
+    showToast('✅ OLD Deposit Approved RS '+amount,'ok');
+  }catch(e){showToast(e.message,'err');}
+}
+async function rejectOldDeposit(phone, idx){
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var tx=u.transactions[idx];
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='❌ Reject OLD Deposit • RS '+tx.amount;
+  sub.textContent=phone;
+  body.innerHTML='<div class="info-row"><span class="label">Phone</span><span class="value">'+phone+'</span></div><div class="info-row highlight"><span class="label">Amount</span><span class="value" style="color:#f87171">RS '+tx.amount+'</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;cursor:pointer">Cancel</button><button onclick="confirmRejectOldDeposit(\''+phone+'\','+idx+')" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">❌ Confirm Reject</button></div>';
+  modal.classList.add('active');
+}
+async function confirmRejectOldDeposit(phone, idx){
+  closeApprovalModal();
+  try{
+    var u=allUsers.find(function(x){return x.phone===phone;});
+    var txs=u.transactions.slice();
+    txs[idx].status='rejected';
+    await db.collection('users').doc(phone).update({transactions:txs});
+    showToast('❌ OLD Deposit Rejected','ok');
+  }catch(e){showToast(e.message,'err');}
+}
+async function approveOldWithdraw(phone, idx, amount){
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var tx=u.transactions[idx];
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='💸 Approve OLD Withdraw • RS '+amount;
+  sub.textContent=phone;
+  body.innerHTML='<div class="info-row"><span class="label">Phone</span><span class="value">'+phone+'</span></div><div class="info-row highlight"><span class="label">Amount</span><span class="value">RS '+amount+' • '+(tx.method||'')+' '+(tx.account||'')+'</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;cursor:pointer">Cancel</button><button onclick="confirmApproveOldWithdraw(\''+phone+'\','+idx+')" style="padding:12px;border-radius:10px;background:#60a5fa;color:#000;border:none;font-weight:800;cursor:pointer">✅ Confirm Approve</button></div>';
+  modal.classList.add('active');
+}
+async function confirmApproveOldWithdraw(phone, idx){
+  closeApprovalModal();
+  try{
+    var u=allUsers.find(function(x){return x.phone===phone;});
+    var txs=u.transactions.slice();
+    txs[idx].status='approved';
+    await db.collection('users').doc(phone).update({transactions:txs});
+    showToast('✅ OLD Withdraw Approved','ok');
+  }catch(e){showToast(e.message,'err');}
+}
+async function rejectOldWithdraw(phone, idx, amount){
+  var u=allUsers.find(function(x){return x.phone===phone;});
+  var tx=u.transactions[idx];
+  var modal=document.getElementById('approvalModal');
+  var title=document.getElementById('approvalTitle');
+  var sub=document.getElementById('approvalSubtitle');
+  var body=document.getElementById('approvalBody');
+  title.textContent='❌ Reject OLD Withdraw + Refund • RS '+amount;
+  sub.textContent=phone;
+  body.innerHTML='<div class="info-row highlight"><span class="label">Refund</span><span class="value" style="color:#f87171">RS '+amount+' refund</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button onclick="closeApprovalModal()" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;cursor:pointer">Cancel</button><button onclick="confirmRejectOldWithdraw(\''+phone+'\','+idx+','+amount+')" style="padding:12px;border-radius:10px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:800;cursor:pointer">❌ Confirm Reject + Refund</button></div>';
+  modal.classList.add('active');
+}
+async function confirmRejectOldWithdraw(phone, idx, amount){
+  closeApprovalModal();
+  try{
+    var u=allUsers.find(function(x){return x.phone===phone;});
+    var txs=u.transactions.slice();
+    txs[idx].status='rejected';
+    var newBal=(u.balance||0)+Number(amount);
+    await db.collection('users').doc(phone).update({balance:newBal,transactions:txs});
+    showToast('❌ OLD Withdraw Rejected + Refunded','ok');
+  }catch(e){showToast(e.message,'err');}
+}
+
 
 function renderUsers(){
   var div=document.getElementById('usersTable');
   if(allUsers.length===0){div.innerHTML='<div style="padding:20px;text-align:center;color:rgba(255,255,255,.4)">No users</div>';return;}
-  var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase"><th style="padding:8px;text-align:left">User / Legal Name</th><th style="padding:8px;text-align:left">Phone / CNIC</th><th style="padding:8px">Balance</th><th style="padding:8px">Deposit</th><th style="padding:8px">Plans</th><th style="padding:8px">KYC</th><th style="padding:8px">Actions</th></tr></thead><tbody>';
+  var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase"><th style="padding:8px;text-align:left">User / Legal Name</th><th style="padding:8px;text-align:left">Phone / CNIC</th><th style="padding:8px">Balance</th><th style="padding:8px">Deposit</th><th style="padding:8px">Active Plans</th><th style="padding:8px">KYC</th><th style="padding:8px">Actions</th></tr></thead><tbody>';
   for(var i=0;i<allUsers.length;i++){
     var u=allUsers[i];
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:8px"><div style="font-weight:700">'+(u.fullName||u.kycData?.legalName||'User')+'</div><div style="font-size:9px;color:rgba(255,255,255,.4)">Legal: '+(u.kycData?.legalName||'')+' • '+(u.referralCode||'')+'</div></td><td style="padding:8px"><div style="font-weight:600">'+u.phone+'</div><div style="font-size:10px;color:#f59e0b">'+(u.kycData?.cnic||'')+'</div></td><td style="padding:8px;font-weight:700;color:#f59e0b">Rs '+(u.balance||0).toLocaleString()+'</td><td style="padding:8px">Rs '+(u.totalDeposit||0).toLocaleString()+'</td><td style="padding:8px">'+((u.activeInvests||[]).filter(function(a){return a.status!=='principal_returned'}).length)+'</td><td style="padding:8px"><span style="padding:3px 8px;border-radius:999px;font-size:9px;font-weight:800;background:'+(u.kycStatus==='approved'?'rgba(34,197,94,.15);color:#22c55e':u.kycStatus==='pending'?'rgba(245,158,11,.15);color:#f59e0b':'rgba(255,255,255,.06);color:rgba(255,255,255,.4)')+'">'+(u.kycStatus||'not_submitted').toUpperCase()+'</span></td><td style="padding:8px"><button class="btn btn-edit" onclick="openEdit(\''+u.phone+'\')">Edit</button> <button class="btn btn-del" onclick="openDeleteModal(\''+u.phone+'\')">Del</button></td></tr>';
+    var activePlans = (u.activeInvests||[]).filter(function(a){return a.status!=='principal_returned'});
+    var plansText = activePlans.length>0 ? activePlans.map(function(p){return (p.planName||p.name||'Plan')+' RS '+(p.amount||p.investAmount||0)+' ('+(p.status||'')+')';}).join('<br>') : 'No active plan';
+    var plansCount = activePlans.length;
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:8px"><div style="font-weight:700">'+(u.fullName||u.kycData?.legalName||'User')+'</div><div style="font-size:9px;color:rgba(255,255,255,.4)">Legal: '+(u.kycData?.legalName||'')+' • '+(u.referralCode||'')+'</div><div style="font-size:9px;color:#60a5fa;margin-top:2px">'+plansText+'</div></td><td style="padding:8px"><div style="font-weight:600">'+u.phone+'</div><div style="font-size:10px;color:#f59e0b">'+(u.kycData?.cnic||'')+'</div></td><td style="padding:8px;font-weight:700;color:#f59e0b">Rs '+(u.balance||0).toLocaleString()+'</td><td style="padding:8px">Rs '+(u.totalDeposit||0).toLocaleString()+'</td><td style="padding:8px"><span style="background:'+(plansCount>0?'rgba(34,197,94,.15);color:#22c55e':'rgba(255,255,255,.06);color:rgba(255,255,255,.4)')+';padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700">'+plansCount+' plans</span><div style="font-size:8px;color:rgba(255,255,255,.4);margin-top:4px">'+(u.activeInvests?u.activeInvests.length+' total':'')+'</div></td><td style="padding:8px"><span style="padding:3px 8px;border-radius:999px;font-size:9px;font-weight:800;background:'+(u.kycStatus==='approved'?'rgba(34,197,94,.15);color:#22c55e':u.kycStatus==='pending'?'rgba(245,158,11,.15);color:#f59e0b':'rgba(255,255,255,.06);color:rgba(255,255,255,.4)')+'">'+(u.kycStatus||'not_submitted').toUpperCase()+'</span></td><td style="padding:8px"><button class="btn btn-edit" onclick="openEdit(\''+u.phone+'\')">Edit</button> <button class="btn btn-del" onclick="openDeleteModal(\''+u.phone+'\')">Del</button></td></tr>';
   }
   html+='</tbody></table></div>';
   div.innerHTML=html;
@@ -302,6 +424,20 @@ function openEdit(phone){
   document.getElementById('eKyc').value=u.kycStatus||'not_submitted';
   document.getElementById('eRefCode').value=u.referralCode||'';
   document.getElementById('ePlans').value=JSON.stringify(u.activeInvests||[],null,2);
+  var display=document.getElementById('activePlansDisplay');
+  if(display){
+    var plans=u.activeInvests||[];
+    if(plans.length===0){
+      display.innerHTML='❌ No active plans • Is user ne koi plan nahi kharida • Balance: Rs '+(u.balance||0)+' • Deposit: Rs '+(u.totalDeposit||0)+' • Plans count: 0';
+    }else{
+      var html='✅ '+plans.length+' active plans: <br>';
+      for(var i=0;i<plans.length;i++){
+        var p=plans[i];
+        html+='• '+(p.planName||p.name||'Plan')+' • RS '+(p.amount||p.investAmount||0)+' • Status: '+(p.status||'active')+' • Daily: '+(p.dailyProfit||'')+'<br>';
+      }
+      display.innerHTML=html;
+    }
+  }
   document.getElementById('editModal').style.display='flex';
 }
 function closeEditModal(){document.getElementById('editModal').style.display='none';editingPhone=null;}
@@ -354,7 +490,7 @@ window.addEventListener('load', checkSession);
     <div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Address</label><input id="eAddr" type="text" style="width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Balance RS</label><input id="eBalance" type="number" style="width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff"></div><div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Total Deposit RS</label><input id="eDeposit" type="number" style="width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">KYC Status</label><select id="eKyc" style="width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff"><option value="not_submitted">not_submitted</option><option value="pending">pending</option><option value="approved">approved</option><option value="rejected">rejected</option></select></div><div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Referral Code</label><input id="eRefCode" type="text" style="width:100%;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff"></div></div>
-    <div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Active Plans JSON</label><textarea id="ePlans" style="width:100%;min-height:80px;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff;font-family:monospace;font-size:11px"></textarea></div>
+    <div style="margin-bottom:10px"><label style="font-size:10px;color:rgba(255,255,255,.5)">Active Plans JSON • Isme plans hain • Khali [] matlab koi active plan nahi • Example: [{"planName":"Diamond Basic","amount":5000,"status":"active"}]</label><div id="activePlansDisplay" style="padding:8px;background:#0d1023;border-radius:8px;font-size:10px;color:#60a5fa;margin-bottom:6px;min-height:20px"></div><textarea id="ePlans" style="width:100%;min-height:80px;padding:10px;border-radius:8px;background:#0d1023;border:1px solid rgba(255,255,255,.1);color:#fff;font-family:monospace;font-size:11px"></textarea></div>
     <button style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;border:none;font-weight:800;cursor:pointer;margin-top:10px" onclick="saveUser()">Save • Firebase Sync</button>
     <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><button onclick="openApproveKycFromEdit()" style="padding:8px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.2);color:#22c55e;font-weight:700;font-size:11px">✓ Approve KYC</button><button onclick="openDeleteFromEdit()" style="padding:8px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.2);color:#f87171;font-weight:700;font-size:11px">Delete User</button></div>
   </div>
