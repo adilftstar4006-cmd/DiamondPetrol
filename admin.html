@@ -160,6 +160,7 @@ function loadData(){
     document.getElementById('userCount').textContent=allUsers.length+' users';
     renderKyc();
     renderUsers();
+    renderPending(); // FIX: Purane pending bhi refresh honge approve ke baad
   });
   db.collection('depositRequests').where('status','==','pending').onSnapshot(function(snap){
     depositCache=snap.docs.map(function(d){return d.data();});
@@ -245,14 +246,26 @@ async function approveOldDeposit(phone, idx, amount){
 async function confirmApproveOldDeposit(phone, idx, amount){
   closeApprovalModal();
   try{
-    var u=allUsers.find(function(x){return x.phone===phone;});
-    var txs=u.transactions.slice();
+    showToast('⏳ Approving... Please wait','ok');
+    var userDoc=await db.collection('users').doc(phone).get();
+    if(!userDoc.exists){showToast('❌ User not found','err');return;}
+    var userData=userDoc.data();
+    var txs=(userData.transactions||[]).slice();
+    if(idx>=txs.length){showToast('❌ Transaction not found','err');return;}
+    // Update transaction
     txs[idx].status='approved';
-    var newBal=(u.balance||0)+Number(amount);
-    var newTotalDep=(u.totalDeposit||0)+Number(amount);
+    txs[idx].desc=(txs[idx].desc||'').replace('Pending','Approved').replace('pending','Approved');
+    var newBal=(userData.balance||0)+Number(amount);
+    var newTotalDep=(userData.totalDeposit||0)+Number(amount);
+    console.log('Approving OLD deposit:', phone, 'Amount:', amount, 'Old Bal:', userData.balance, 'New Bal:', newBal);
     await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
-    showToast('✅ OLD Deposit Approved RS '+amount,'ok');
-  }catch(e){showToast(e.message,'err');}
+    showToast('✅ OLD Deposit Approved RS '+amount+' • Balance: '+newBal+' • User: '+phone+' ko mil gaya!','ok');
+    // Force refresh
+    setTimeout(function(){renderPending();},500);
+  }catch(e){
+    console.error('Approve error:', e);
+    showToast('❌ Error: '+e.message,'err');
+  }
 }
 async function rejectOldDeposit(phone, idx){
   var u=allUsers.find(function(x){return x.phone===phone;});
@@ -402,9 +415,76 @@ function openRejectWithdrawModal(id){
 // Confirm actions
 async function confirmKyc(phone){closeApprovalModal();try{await db.collection('users').doc(phone).update({kycStatus:'approved'});showToast('✅ KYC Approved','ok');}catch(e){showToast(e.message,'err');}}
 async function confirmRejectKyc(phone){closeApprovalModal();try{await db.collection('users').doc(phone).update({kycStatus:'rejected'});showToast('❌ KYC Rejected','ok');}catch(e){showToast(e.message,'err');}}
-async function confirmDeposit(id,phone,amount){closeApprovalModal();try{var userDoc=await db.collection('users').doc(phone).get();var userData=userDoc.data();var newBal=(userData.balance||0)+amount;var newTotalDep=(userData.totalDeposit||0)+amount;var txs=userData.transactions||[];for(var i=0;i<txs.length;i++){if(txs[i].depositId===id&&txs[i].status==='pending'){txs[i].status='approved';txs[i].desc=txs[i].desc.replace('Pending','Approved');break;}}await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});await db.collection('depositRequests').doc(id).update({status:'approved',approvedAt:new Date().toISOString()});showToast('✅ Deposit Approved RS '+amount,'ok');}catch(e){showToast(e.message,'err');}}
+async function confirmDeposit(id,phone,amount){
+  closeApprovalModal();
+  try{
+    showToast('⏳ Approving deposit...','ok');
+    var userDoc=await db.collection('users').doc(phone).get();
+    if(!userDoc.exists){showToast('❌ User not found','err');return;}
+    var userData=userDoc.data();
+    var txs=(userData.transactions||[]).slice();
+    var found=false;
+    for(var i=0;i<txs.length;i++){
+      if(txs[i].depositId===id && txs[i].status==='pending'){
+        txs[i].status='approved';
+        txs[i].desc=(txs[i].desc||'').replace('Pending','Approved');
+        found=true;
+        break;
+      }
+    }
+    // If not found by depositId, try by amount and pending
+    if(!found){
+      for(var j=0;j<txs.length;j++){
+        if(txs[j].type==='deposit' && txs[j].status==='pending' && Number(txs[j].amount)===Number(amount)){
+          txs[j].status='approved';
+          txs[j].desc=(txs[j].desc||'').replace('Pending','Approved');
+          found=true;
+          break;
+        }
+      }
+    }
+    var newBal=(userData.balance||0)+Number(amount);
+    var newTotalDep=(userData.totalDeposit||0)+Number(amount);
+    console.log('Approving NEW deposit:', phone, 'Amount:', amount, 'Found:', found, 'NewBal:', newBal);
+    await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
+    await db.collection('depositRequests').doc(id).update({status:'approved',approvedAt:new Date().toISOString()});
+    showToast('✅ Deposit Approved RS '+amount+' • User '+phone+' ko balance mil gaya! New Balance: '+newBal,'ok');
+    setTimeout(function(){renderPending();},500);
+  }catch(e){
+    console.error('Approve error:', e);
+    showToast('❌ Error: '+e.message,'err');
+  }
+}
 async function confirmRejectDeposit(id,phone,amount){closeApprovalModal();try{var userDoc=await db.collection('users').doc(phone).get();var txs=userDoc.data().transactions||[];for(var i=0;i<txs.length;i++){if(txs[i].depositId===id&&txs[i].status==='pending'){txs[i].status='rejected';break;}}await db.collection('users').doc(phone).update({transactions:txs});await db.collection('depositRequests').doc(id).update({status:'rejected'});showToast('❌ Deposit Rejected','ok');}catch(e){showToast(e.message,'err');}}
-async function confirmWithdraw(id,phone,amount){closeApprovalModal();try{var userDoc=await db.collection('users').doc(phone).get();var txs=userDoc.data().transactions||[];for(var i=0;i<txs.length;i++){if(txs[i].withdrawId===id&&txs[i].status==='pending'){txs[i].status='approved';break;}}await db.collection('users').doc(phone).update({transactions:txs});await db.collection('withdrawRequests').doc(id).update({status:'approved'});showToast('✅ Withdraw Approved','ok');}catch(e){showToast(e.message,'err');}}
+async function confirmWithdraw(id,phone,amount){
+  closeApprovalModal();
+  try{
+    showToast('⏳ Approving withdraw...','ok');
+    var userDoc=await db.collection('users').doc(phone).get();
+    var txs=(userDoc.data().transactions||[]).slice();
+    var found=false;
+    for(var i=0;i<txs.length;i++){
+      if(txs[i].withdrawId===id && txs[i].status==='pending'){
+        txs[i].status='approved';
+        txs[i].desc=(txs[i].desc||'').replace('Pending','Approved - Sent');
+        found=true;
+        break;
+      }
+    }
+    if(!found){
+      for(var j=0;j<txs.length;j++){
+        if(txs[j].type==='withdraw' && txs[j].status==='pending' && Number(txs[j].amount)===Number(amount)){
+          txs[j].status='approved';
+          found=true;
+          break;
+        }
+      }
+    }
+    await db.collection('users').doc(phone).update({transactions:txs});
+    await db.collection('withdrawRequests').doc(id).update({status:'approved',approvedAt:new Date().toISOString()});
+    showToast('✅ Withdraw Approved RS '+amount+' • Sent!','ok');
+  }catch(e){showToast('❌ Error: '+e.message,'err');}
+}
 async function confirmRejectWithdraw(id,phone,amount){closeApprovalModal();try{var userDoc=await db.collection('users').doc(phone).get();var userData=userDoc.data();var newBal=(userData.balance||0)+amount;var txs=userData.transactions||[];for(var i=0;i<txs.length;i++){if(txs[i].withdrawId===id&&txs[i].status==='pending'){txs[i].status='rejected';break;}}await db.collection('users').doc(phone).update({balance:newBal,transactions:txs});await db.collection('withdrawRequests').doc(id).update({status:'rejected'});showToast('❌ Withdraw Rejected + Refunded','ok');}catch(e){showToast(e.message,'err');}}
 
 
