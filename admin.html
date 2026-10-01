@@ -66,7 +66,7 @@ function checkPwd(){
       setTimeout(initFirebaseAndLoad, 300);
     }else{
       console.log("Password wrong");
-      if(error){error.style.display='block'; error.textContent='❌ Wrong! You typed: '+val+' | Try: Diamond123';}
+      if(error){error.style.display='block'; error.textContent='❌ Incorrect admin password';}
       input.style.borderColor='#f87171';
       showToast('❌ Wrong password','err');
       setTimeout(function(){if(error)error.style.display='none'; input.style.borderColor='rgba(255,255,255,.15)';},3000);
@@ -152,27 +152,25 @@ console.log("Second script - Firebase SDK loaded, firebase defined:", typeof fir
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial, sans-serif;background:#0a0e1f;color:#fff;min-height:100vh}
-.gate{position:fixed;inset:0;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
-.card{background:#151a33;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:30px;width:100%;max-width:380px;text-align:center}
-.input{width:100%;padding:14px;border-radius:12px;background:#0d1023;border:1px solid rgba(255,255,255,.15);color:#fff;margin-top:16px}
-.btn{width:100%;padding:14px;border-radius:12px;background:#f59e0b;color:#000;border:none;font-weight:800;margin-top:12px;cursor:pointer}
-.error{color:#fca5a5;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);padding:10px;border-radius:10px;font-size:11px;margin-top:10px;display:none}
-.toast-wrap{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:8px}
-.solar-wrap{max-width:500px;margin:0 auto;padding:0 14px 100px}
-.btn-small{padding:6px 12px;border-radius:8px;border:none;font-weight:700;font-size:10px;cursor:pointer;margin-right:4px}
-.btn-edit{background:rgba(96,165,250,.15);color:#60a5fa;border:1px solid rgba(96,165,250,.2)}
-.btn-del{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.2)}
-.btn-approve{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
-.modal.active{display:flex}
-.modal-card{background:#151a33;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto}
-.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:12px}
-.info-row .label{color:rgba(255,255,255,.5)}
-.info-row .value{font-weight:700}
-.info-row.highlight{background:rgba(245,158,11,.08);border-radius:8px;padding:10px;margin:6px 0}
-.screenshot-box{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
-.screenshot-box img{width:100%;max-height:200px;object-fit:contain;display:block}
+:root{--bg:#080b18;--panel:#11162a;--panel2:#0d1223;--line:rgba(255,255,255,.08);--muted:#8b93aa;--gold:#f59e0b;--green:#22c55e;--red:#f87171;--blue:#60a5fa}
+html{background:var(--bg)}body{font-family:Inter,Arial,sans-serif;background:radial-gradient(700px 400px at 50% -10%,rgba(245,158,11,.09),transparent 65%),var(--bg);color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}button{touch-action:manipulation}
+.gate{position:fixed;inset:0;background:linear-gradient(135deg,#090b19,#171332,#0b1930);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}.card{background:rgba(17,22,42,.97);border:1px solid var(--line);border-radius:24px;padding:26px;width:100%;max-width:380px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.input{width:100%;padding:13px 14px;border-radius:12px;background:#090d1a;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:8px;outline:none}.input:focus{border-color:rgba(245,158,11,.55);box-shadow:0 0 0 3px rgba(245,158,11,.08)}
+.btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#080b12;border:none;font-weight:900;margin-top:12px;cursor:pointer}.error{color:#fca5a5;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);padding:10px;border-radius:10px;font-size:11px;margin-top:10px;display:none}
+.toast-wrap{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:7px;width:min(92vw,380px);pointer-events:none}
+#adminContent{padding:12px!important}#adminContent>div{max-width:980px!important;margin:0 auto!important}
+.admin-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-12px -12px 14px;padding:13px 12px;background:rgba(8,11,24,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.admin-title{display:flex;align-items:center;gap:10px;min-width:0}.admin-title .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#111;font-size:20px;box-shadow:0 8px 24px rgba(245,158,11,.2)}.admin-title h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-title p{font-size:9px;color:var(--muted);margin-top:2px}.lock-btn{padding:9px 12px!important;border-radius:10px!important;margin:0!important}
+.dashboard{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:12px}.metric{background:linear-gradient(145deg,rgba(17,22,42,.98),rgba(13,18,35,.98));border:1px solid var(--line);border-radius:15px;padding:13px;min-width:0}.metric .icon{font-size:16px;margin-bottom:7px}.metric .num{font-size:20px;font-weight:900;line-height:1}.metric .label{font-size:9px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.4px}
+.admin-section{background:rgba(17,22,42,.9);border:1px solid var(--line);border-radius:17px;padding:13px;margin-bottom:11px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.section-head h3{font-size:12px}.section-head .count{font-size:9px;color:var(--muted)}.search-box{width:100%;padding:11px 12px;border-radius:11px;background:#090d1a;border:1px solid var(--line);color:#fff;outline:none;margin-bottom:9px}
+.admin-item{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:11px}.item-main{display:flex;align-items:center;gap:10px}.item-avatar{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;font-weight:900;background:rgba(245,158,11,.14);color:var(--gold)}.item-info{min-width:0;flex:1}.item-info .name{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item-info .meta{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.45}.item-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.btn-small{padding:8px 11px;border-radius:9px;border:none;font-weight:800;font-size:9px;cursor:pointer;margin:0}.btn-edit{background:rgba(96,165,250,.13);color:var(--blue);border:1px solid rgba(96,165,250,.2)}.btn-del{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2)}.btn-approve{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}.btn-blue{background:#60a5fa!important;color:#07101b!important}
+.user-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.user-stats{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.pill{padding:4px 7px;border-radius:999px;font-size:8px;font-weight:800;background:rgba(255,255,255,.06);color:#aeb5c7}.pill.gold{background:rgba(245,158,11,.12);color:var(--gold)}.pill.green{background:rgba(34,197,94,.12);color:var(--green)}.pill.blue{background:rgba(96,165,250,.12);color:var(--blue)}.pill.red{background:rgba(248,113,113,.12);color:var(--red)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);display:none;align-items:flex-end;justify-content:center;z-index:50;padding:10px}.modal.active{display:flex}.modal-card{background:#11162a;border:1px solid var(--line);border-radius:22px 22px 14px 14px;padding:17px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;box-shadow:0 -15px 70px rgba(0,0,0,.45)}
+.info-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:11px}.info-row .label{color:var(--muted)}.info-row .value{font-weight:800;text-align:right;word-break:break-word}.info-row.highlight{background:rgba(245,158,11,.08);border-radius:9px;padding:10px;margin:5px 0}.screenshot-box{margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#080b18}.screenshot-box img{width:100%;max-height:260px;object-fit:contain;display:block}.empty{padding:18px;text-align:center;color:#667085;font-size:10px}
+@media(min-width:700px){#adminContent{padding:22px!important}.admin-top{margin:-22px -22px 18px;padding:15px 22px}.modal{align-items:center;padding:16px}.modal-card{border-radius:20px}}
+@media(max-width:699px){.dashboard{grid-template-columns:repeat(2,1fr)}.metric:first-child{grid-column:span 2}.metric .num{font-size:18px}.admin-section{padding:11px}.user-card{grid-template-columns:1fr}.user-card .item-actions{margin-top:0}}
 </style>
 </head>
 <body>
@@ -183,8 +181,8 @@ body{font-family:Arial, sans-serif;background:#0a0e1f;color:#fff;min-height:100v
   <div class="card">
     <div style="font-size:40px">🔐</div>
     <h2>DIAMOND PETROL ADMIN</h2>
-    <p style="font-size:11px;color:#888;margin-top:5px">v66 - LOGIN 100% FIXED - Console me check karo</p>
-    <p style="font-size:10px;color:#f59e0b;margin-top:8px">Diamond123 / 03313394007 / Admin123 / adil123</p>
+    <p style="font-size:11px;color:#888;margin-top:5px">Secure admin access</p>
+    <p style="font-size:10px;color:#888;margin-top:8px">Secure admin access</p>
     <input id="pwdInput" type="password" class="input" placeholder="Password: Diamond123">
     <button class="btn" onclick="checkPwd()">🔓 UNLOCK - Login</button>
     <div id="pwdError" class="error">❌ Wrong password</div>
@@ -192,42 +190,19 @@ body{font-family:Arial, sans-serif;background:#0a0e1f;color:#fff;min-height:100v
   </div>
 </div>
 
-<div id="adminContent" style="display:none;padding:16px">
-  <div style="max-width:500px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2>✅ ADMIN PANEL - LOGIN SUCCESS</h2>
-      <button class="btn-small btn-del" onclick="lockAdmin()">🔒 Lock</button>
-    </div>
-    
-    <div style="background:#151a33;border-radius:16px;padding:16px;margin-bottom:12px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
-        <div><div id="totalUsers" style="font-size:20px;font-weight:800">0</div><div style="font-size:9px;color:#888">USERS</div></div>
-        <div><div id="totalBalance" style="font-size:20px;font-weight:800;color:#f59e0b">Rs 0</div><div style="font-size:9px;color:#888">BALANCE</div></div>
-        <div><div id="kycPending" style="font-size:20px;font-weight:800;color:#f59e0b">0</div><div style="font-size:9px;color:#888">KYC PENDING</div></div>
-      </div>
-      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:#0d1023;padding:8px;border-radius:8px;text-align:center"><span id="pendingTx" style="font-weight:800;color:#f59e0b">0</span><span style="font-size:10px;color:#888"> PENDING</span></div>
-        <div style="background:#0d1023;padding:8px;border-radius:8px;text-align:center"><span id="userCount" style="font-size:10px;color:#888">0 users</span></div>
-      </div>
-    </div>
-
-    <div style="background:#151a33;border-radius:16px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:12px;margin-bottom:10px">⏳ Pending Deposits & Withdraws (Old+New)</h3>
-      <div id="pendingList"><div style="text-align:center;padding:20px;color:#666">Loading...</div></div>
-    </div>
-
-    <div style="background:#151a33;border-radius:16px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:12px;margin-bottom:10px">👥 All Users</h3>
-      <div id="usersTable"><div style="text-align:center;padding:20px;color:#666">Loading users...</div></div>
-    </div>
-
-    <div style="background:#151a33;border-radius:16px;padding:16px">
-      <h3 style="font-size:12px;margin-bottom:10px">🪪 KYC Pending</h3>
-      <div id="kycList"><div style="text-align:center;padding:20px;color:#666">Loading...</div></div>
-    </div>
-  </div>
+<div id="adminContent" style="display:none;padding:16px"><div>
+<div class="admin-top"><div class="admin-title"><div class="logo">◆</div><div><h2>Diamond Petrol Admin</h2><p>Fast control center • Live Firebase</p></div></div><button class="btn-small btn-del lock-btn" onclick="lockAdmin()">🔒 Lock</button></div>
+<div class="dashboard">
+<div class="metric"><div class="icon">👥</div><div id="totalUsers" class="num">0</div><div class="label">Users</div></div>
+<div class="metric"><div class="icon">💰</div><div id="totalBalance" class="num" style="color:#f59e0b">Rs 0</div><div class="label">Balance</div></div>
+<div class="metric"><div class="icon">🪪</div><div id="kycPending" class="num" style="color:#f59e0b">0</div><div class="label">KYC Pending</div></div>
+<div class="metric"><div class="icon">⏳</div><div id="pendingTx" class="num" style="color:#f59e0b">0</div><div class="label">Pending</div></div>
+<div class="metric"><div class="icon">⚡</div><div id="userCount" class="num" style="font-size:13px;color:#8b93aa">0</div><div class="label">Live Records</div></div>
 </div>
-
+<section class="admin-section"><div class="section-head"><h3>⏳ Pending Requests</h3><span class="count" id="pendingCountLabel">Live</span></div><div id="pendingList"><div class="empty">Loading requests...</div></div></section>
+<section class="admin-section"><div class="section-head"><h3>👥 All Users</h3><span class="count" id="userCountLabel">0 users</span></div><input id="userSearch" class="search-box" type="search" placeholder="Search name, phone, CNIC or referral..." oninput="renderUsers()"><div id="usersTable"><div class="empty">Loading users...</div></div></section>
+<section class="admin-section"><div class="section-head"><h3>🪪 KYC Pending</h3><span class="count">Review & approve</span></div><div id="kycList"><div class="empty">Loading KYC...</div></div></section>
+</div></div>
 <!-- Edit Modal -->
 <div id="editModal" class="modal">
   <div class="modal-card">
@@ -277,99 +252,57 @@ body{font-family:Arial, sans-serif;background:#0a0e1f;color:#fff;min-height:100v
 var allUsers=[], depositCache=[], withdrawCache=[];
 var editingPhone=null;
 
+var dataLoaded=false;
 function loadData(){
-  console.log("loadData called, db:", !!db);
-  if(!db){
-    console.log("db not ready, retrying in 1s");
-    setTimeout(loadData,1000);
-    return;
-  }
-  db.collection('users').onSnapshot(function(snap){
-    allUsers=[];
-    var totalBal=0, kycPend=0;
-    snap.forEach(function(doc){var u=doc.data();allUsers.push(u);totalBal+=Number(u.balance||0);if(u.kycStatus==='pending')kycPend++;});
-    document.getElementById('totalUsers').textContent=allUsers.length;
-    document.getElementById('totalBalance').textContent='Rs '+totalBal.toLocaleString();
-    document.getElementById('kycPending').textContent=kycPend;
-    document.getElementById('userCount').textContent=allUsers.length+' users';
-    renderKyc();
-    renderUsers();
-    renderPending();
-  });
-  db.collection('depositRequests').where('status','==','pending').onSnapshot(function(snap){
-    depositCache=[];
-    snap.forEach(function(doc){depositCache.push(doc.data());});
-    renderPending();
-  });
-  db.collection('withdrawRequests').where('status','==','pending').onSnapshot(function(snap){
-    withdrawCache=[];
-    snap.forEach(function(doc){withdrawCache.push(doc.data());});
-    renderPending();
-  });
+ if(!db){setTimeout(loadData,500);return;}
+ if(dataLoaded)return;
+ dataLoaded=true;
+ db.collection('users').onSnapshot(function(snap){
+  allUsers=[];var totalBal=0,kycPend=0;
+  snap.forEach(function(doc){var u=doc.data();allUsers.push(u);totalBal+=Number(u.balance||0);if(u.kycStatus==='pending')kycPend++;});
+  document.getElementById('totalUsers').textContent=allUsers.length;
+  document.getElementById('totalBalance').textContent='Rs '+totalBal.toLocaleString();
+  document.getElementById('kycPending').textContent=kycPend;
+  document.getElementById('userCount').textContent=allUsers.length;
+  renderKyc();renderUsers();renderPending();
+ });
+ db.collection('depositRequests').where('status','==','pending').onSnapshot(function(snap){depositCache=[];snap.forEach(function(doc){depositCache.push(doc.data());});renderPending();});
+ db.collection('withdrawRequests').where('status','==','pending').onSnapshot(function(snap){withdrawCache=[];snap.forEach(function(doc){withdrawCache.push(doc.data());});renderPending();});
 }
-
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function escAttr(v){return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function renderKyc(){
-  var div=document.getElementById('kycList');
-  var pending=allUsers.filter(function(u){return u.kycStatus==='pending';});
-  if(pending.length===0){div.innerHTML='<div style="text-align:center;padding:20px;color:#666">No pending KYC</div>';return;}
-  var html='';
-  for(var i=0;i<pending.length;i++){
-    var u=pending[i];
-    html+='<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:#0d1023;margin-bottom:8px;align-items:center"><div style="width:40px;height:40px;border-radius:50%;background:#f59e0b;display:grid;place-items:center;color:#000;font-weight:800">'+(u.fullName||'U')[0]+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+(u.fullName||'')+' • '+(u.kycData?.legalName||'')+'</div><div style="font-size:10px;color:#888">'+u.phone+' • CNIC: '+(u.kycData?.cnic||'')+'</div></div><button class="btn-small btn-approve" onclick="openKycModal(\''+u.phone+'\')">View</button></div>';
-  }
-  div.innerHTML=html;
+ var div=document.getElementById('kycList'),pending=allUsers.filter(function(u){return u.kycStatus==='pending';});
+ if(!pending.length){div.innerHTML='<div class="empty">✓ No pending KYC</div>';return;}
+ var html='';
+ for(var i=0;i<pending.length;i++){var u=pending[i],name=(u.kycData&&u.kycData.legalName)||u.fullName||'User';
+  html+='<div class="admin-item"><div class="item-main"><div class="item-avatar">ID</div><div class="item-info"><div class="name">'+esc(name)+'</div><div class="meta">'+esc(u.phone||'')+'<br>CNIC: '+esc((u.kycData&&u.kycData.cnic)||'')+'</div></div><span class="pill gold">PENDING</span></div><div class="item-actions"><button class="btn-small btn-approve" onclick="openKycModal(\''+escAttr(u.phone)+'\')">View KYC</button><button class="btn-small btn-edit" onclick="openEdit(\''+escAttr(u.phone)+'\')">Edit User</button></div></div>';
+ }
+ div.innerHTML=html;
 }
-
 function renderUsers(){
-  var div=document.getElementById('usersTable');
-  if(allUsers.length===0){div.innerHTML='<div style="text-align:center;padding:20px;color:#666">No users</div>';return;}
-  var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="color:#888;font-size:9px;text-transform:uppercase"><th style="padding:8px;text-align:left">User</th><th style="padding:8px">Balance</th><th style="padding:8px">Plans</th><th style="padding:8px">KYC</th><th style="padding:8px">Actions</th></tr></thead><tbody>';
-  for(var i=0;i<allUsers.length;i++){
-    var u=allUsers[i];
-    var activePlans=(u.activeInvests||[]).filter(function(a){return a.status!=='principal_returned'});
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:8px"><div style="font-weight:700">'+(u.fullName||u.kycData?.legalName||'User')+'</div><div style="font-size:9px;color:#888">'+u.phone+' • '+(u.kycData?.cnic||'')+'</div><div style="font-size:9px;color:#60a5fa">'+activePlans.length+' plans</div></td><td style="padding:8px;font-weight:700;color:#f59e0b">Rs '+(u.balance||0).toLocaleString()+'</td><td style="padding:8px"><span style="background:'+(activePlans.length>0?'rgba(34,197,94,.15);color:#22c55e':'rgba(255,255,255,.06);color:#888')+';padding:3px 8px;border-radius:999px;font-size:10px">'+activePlans.length+' plans</span></td><td style="padding:8px"><span style="padding:3px 8px;border-radius:999px;font-size:9px;font-weight:800;background:'+(u.kycStatus==='approved'?'rgba(34,197,94,.15);color:#22c55e':u.kycStatus==='pending'?'rgba(245,158,11,.15);color:#f59e0b':'rgba(255,255,255,.06);color:#888')+'">'+(u.kycStatus||'not').toUpperCase()+'</span></td><td style="padding:8px"><button class="btn-small btn-edit" onclick="openEdit(\''+u.phone+'\')">Edit</button> <button class="btn-small btn-del" onclick="openDeleteModal(\''+u.phone+'\')">Del</button></td></tr>';
-  }
-  html+='</tbody></table></div>';
-  div.innerHTML=html;
+ var div=document.getElementById('usersTable'),inp=document.getElementById('userSearch'),q=(inp?inp.value:'').trim().toLowerCase();
+ var users=q?allUsers.filter(function(u){return [u.fullName,u.phone,u.referralCode,u.kycData&&u.kycData.legalName,u.kycData&&u.kycData.cnic].join(' ').toLowerCase().indexOf(q)!==-1;}):allUsers;
+ var label=document.getElementById('userCountLabel');if(label)label.textContent=users.length+' of '+allUsers.length+' users';
+ if(!users.length){div.innerHTML='<div class="empty">'+(q?'No matching users':'No users')+'</div>';return;}
+ var html='';
+ for(var i=0;i<users.length;i++){var u=users[i],plans=(u.activeInvests||[]).filter(function(a){return a.status!=='principal_returned';}),kyc=u.kycStatus||'not_submitted',kc=kyc==='approved'?'green':kyc==='pending'?'gold':kyc==='rejected'?'red':'';
+  html+='<div class="admin-item"><div class="user-card"><div><div class="item-main"><div class="item-avatar">'+esc(((u.fullName||u.phone||'U')[0]||'U').toUpperCase())+'</div><div class="item-info"><div class="name">'+esc(u.fullName||(u.kycData&&u.kycData.legalName)||'User')+'</div><div class="meta">'+esc(u.phone||'')+' • CNIC: '+esc((u.kycData&&u.kycData.cnic)||'')+'</div></div></div><div class="user-stats"><span class="pill gold">Rs '+Number(u.balance||0).toLocaleString()+'</span><span class="pill blue">'+plans.length+' Plans</span><span class="pill '+kc+'">'+esc(kyc).toUpperCase()+'</span></div></div><div class="item-actions"><button class="btn-small btn-edit" onclick="openEdit(\''+escAttr(u.phone)+'\')">Edit</button><button class="btn-small btn-del" onclick="openDeleteModal(\''+escAttr(u.phone)+'\')">Delete</button></div></div></div>';
+ }
+ div.innerHTML=html;
 }
-
 function renderPending(){
-  var div=document.getElementById('pendingList');
-  var allNew=[].concat(depositCache.map(function(d){return {type:'deposit',data:d}}), withdrawCache.map(function(d){return {type:'withdraw',data:d}}));
-  var oldPending=[];
-  for(var u=0;u<allUsers.length;u++){
-    var user=allUsers[u];
-    var txs=user.transactions||[];
-    for(var t=0;t<txs.length;t++){
-      var tx=txs[t];
-      if(tx.status==='pending'){
-        var already=false;
-        if(tx.depositId){for(var d=0;d<depositCache.length;d++){if(depositCache[d].id===tx.depositId){already=true;break;}}}
-        if(tx.withdrawId){for(var w=0;w<withdrawCache.length;w++){if(withdrawCache[w].id===tx.withdrawId){already=true;break;}}}
-        if(!already){
-          oldPending.push({type:tx.type, data:{id:tx.depositId||tx.withdrawId||user.phone+'_'+t, phone:user.phone, fullName:user.fullName||'', amount:tx.amount, method:tx.method||'', senderName:tx.senderName||'', account:tx.account||'', fee:tx.fee||0, receive:tx.receive||0, date:tx.date, screenshot:tx.screenshot||'', kycName:user.kycData?.legalName||'', kycCnic:user.kycData?.cnic||'', desc:tx.desc||''}, source:'old', userPhone:user.phone, txIndex:t});
-        }
-      }
-    }
-  }
-  var all=allNew.concat(oldPending);
-  all.sort(function(a,b){return new Date(b.data.date)-new Date(a.data.date);});
-  document.getElementById('pendingTx').textContent=all.length;
-  if(all.length===0){div.innerHTML='<div style="padding:20px;text-align:center;color:#666">✅ No pending</div>';return;}
-  var html='';
-  for(var i=0;i<all.length;i++){
-    var p=all[i];
-    if(p.type==='deposit'){
-      var d=p.data;
-      var isOld=p.source==='old';
-      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid '+(isOld?'rgba(245,158,11,.4)':'rgba(34,197,94,.25)')+';margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(245,158,11,.15);display:grid;place-items:center">⏳<br><small style="font-size:7px">'+(isOld?'OLD':'NEW')+'</small></div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+d.phone+' • RS '+d.amount+' • '+(d.method||'JazzCash')+' '+(isOld?'<span style="background:#f59e0b;color:#000;padding:1px 4px;border-radius:4px;font-size:8px">OLD</span>':'')+'</div><div style="font-size:10px;color:#888">'+new Date(d.date).toLocaleString()+'</div></div>'+(d.screenshot?'<img src="'+d.screenshot+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="window.open(\''+d.screenshot+'\',\'_blank\')">':'')+'<div style="display:flex;gap:6px">'+(isOld?'<button class="btn-small btn-approve" onclick="approveOldDeposit(\''+p.userPhone+'\','+p.txIndex+','+d.amount+')">Approve OLD</button><button class="btn-small btn-del" onclick="rejectOldDeposit(\''+p.userPhone+'\','+p.txIndex+')">Reject OLD</button>':'<button class="btn-small btn-approve" onclick="openDepositModal(\''+d.id+'\')">View & Approve</button><button class="btn-small btn-del" onclick="openRejectDepositModal(\''+d.id+'\')">Reject</button>')+'</div></div>';
-    }else{
-      var w=p.data;
-      var isOldW=p.source==='old';
-      html+='<div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#0d1023;border:1px solid rgba(96,165,250,.25);margin-bottom:8px;align-items:center;flex-wrap:wrap"><div style="width:50px;height:50px;border-radius:8px;background:rgba(96,165,250,.15);display:grid;place-items:center">💸<br><small style="font-size:7px">'+(isOldW?'OLD':'NEW')+'</small></div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+w.phone+' • RS '+w.amount+' • '+(w.method||'')+' '+(w.account||'')+'</div><div style="font-size:10px;color:#888">'+new Date(w.date).toLocaleString()+'</div></div><div style="display:flex;gap:6px">'+(isOldW?'<button class="btn-small btn-approve" style="background:#60a5fa;color:#000" onclick="approveOldWithdraw(\''+p.userPhone+'\','+p.txIndex+','+w.amount+')">Approve OLD</button><button class="btn-small btn-del" onclick="rejectOldWithdraw(\''+p.userPhone+'\','+p.txIndex+','+w.amount+')">Reject OLD</button>':'<button class="btn-small btn-approve" style="background:#60a5fa;color:#000" onclick="openWithdrawModal(\''+w.id+'\')">View & Approve</button><button class="btn-small btn-del" onclick="openRejectWithdrawModal(\''+w.id+'\')">Reject</button>')+'</div></div>';
-    }
-  }
-  div.innerHTML=html;
+ var div=document.getElementById('pendingList'),allNew=[].concat(depositCache.map(function(d){return {type:'deposit',data:d}}),withdrawCache.map(function(d){return {type:'withdraw',data:d}})),oldPending=[];
+ for(var u=0;u<allUsers.length;u++){var user=allUsers[u],txs=user.transactions||[];for(var t=0;t<txs.length;t++){var tx=txs[t];if(tx.status==='pending'){var already=false;if(tx.depositId){for(var d=0;d<depositCache.length;d++)if(depositCache[d].id===tx.depositId){already=true;break;}}if(tx.withdrawId){for(var w=0;w<withdrawCache.length;w++)if(withdrawCache[w].id===tx.withdrawId){already=true;break;}}if(!already)oldPending.push({type:tx.type,data:{id:tx.depositId||tx.withdrawId||user.phone+'_'+t,phone:user.phone,fullName:user.fullName||'',amount:tx.amount,method:tx.method||'',senderName:tx.senderName||'',account:tx.account||'',fee:tx.fee||0,receive:tx.receive||0,date:tx.date,screenshot:tx.screenshot||'',kycName:user.kycData&&user.kycData.legalName||'',kycCnic:user.kycData&&user.kycData.cnic||'',desc:tx.desc||''},source:'old',userPhone:user.phone,txIndex:t});}}}
+ var all=allNew.concat(oldPending);all.sort(function(a,b){return new Date(b.data.date)-new Date(a.data.date);});document.getElementById('pendingTx').textContent=all.length;var pc=document.getElementById('pendingCountLabel');if(pc)pc.textContent=all.length+' waiting';
+ if(!all.length){div.innerHTML='<div class="empty">✓ No pending requests</div>';return;}
+ var html='';
+ for(var i=0;i<all.length;i++){var p=all[i],d=p.data,old=p.source==='old',type=p.type==='deposit',color=type?'#22c55e':'#60a5fa',actions;
+  if(type)actions=old?'<button class="btn-small btn-approve" onclick="approveOldDeposit(\''+escAttr(p.userPhone)+'\','+p.txIndex+','+Number(d.amount||0)+')">Approve</button><button class="btn-small btn-del" onclick="rejectOldDeposit(\''+escAttr(p.userPhone)+'\','+p.txIndex+')">Reject</button>':'<button class="btn-small btn-approve" onclick="openDepositModal(\''+escAttr(d.id)+'\')">Review</button><button class="btn-small btn-del" onclick="openRejectDepositModal(\''+escAttr(d.id)+'\')">Reject</button>';
+  else actions=old?'<button class="btn-small btn-blue" onclick="approveOldWithdraw(\''+escAttr(p.userPhone)+'\','+p.txIndex+','+Number(d.amount||0)+')">Approve</button><button class="btn-small btn-del" onclick="rejectOldWithdraw(\''+escAttr(p.userPhone)+'\','+p.txIndex+','+Number(d.amount||0)+')">Refund</button>':'<button class="btn-small btn-blue" onclick="openWithdrawModal(\''+escAttr(d.id)+'\')">Review</button><button class="btn-small btn-del" onclick="openRejectWithdrawModal(\''+escAttr(d.id)+'\')">Refund</button>';
+  html+='<div class="admin-item"><div class="item-main"><div class="item-avatar" style="background:'+color+'18;color:'+color+'">'+(type?'↓':'↑')+'</div><div class="item-info"><div class="name">'+(type?'Deposit':'Withdraw')+' • Rs '+Number(d.amount||0).toLocaleString()+'</div><div class="meta">'+esc(d.phone||'')+' • '+esc(d.method||'')+(d.account?' • '+esc(d.account):'')+'<br>'+new Date(d.date).toLocaleString()+'</div></div><span class="pill '+(type?'green':'blue')+'">'+(old?'OLD':'NEW')+'</span></div>'+(d.screenshot?'<div style="margin-top:8px"><img src="'+esc(d.screenshot)+'" style="width:58px;height:58px;object-fit:cover;border-radius:9px;border:1px solid var(--line);cursor:pointer" onclick="window.open(\''+escAttr(d.screenshot)+'\',\'_blank\')"></div>':'')+'<div class="item-actions">'+actions+'</div></div>';
+ }
+ div.innerHTML=html;
 }
 
 function openEdit(phone){
