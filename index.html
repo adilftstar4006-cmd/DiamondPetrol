@@ -136,11 +136,11 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
 @keyframes glowPulse{0%,100%{box-shadow:0 0 0 rgba(245,158,11,0)}50%{box-shadow:0 0 20px rgba(245,158,11,.25)}}
 @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 @keyframes iconPop{0%{transform:scale(.8)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-.solar-plan{animation:floatCard 4s ease-in-out infinite, glowPulse 3s ease-in-out infinite}
-.solar-plan:nth-child(2){animation-delay:.2s}
-.solar-plan:nth-child(3){animation-delay:.4s}
-.solar-plan:nth-child(4){animation-delay:.6s}
-.solar-plan::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:translateX(-100%);animation:shimmer 3s infinite}
+.solar-plan{animation:floatCard 5s ease-in-out infinite;will-change:transform}
+.solar-plan:nth-child(2){animation-delay:.15s}
+.solar-plan:nth-child(3){animation-delay:.3s}
+.solar-plan:nth-child(4){animation-delay:.45s}
+.solar-plan::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:translateX(-100%);animation:shimmer 4s ease-in-out infinite;pointer-events:none;z-index:0}.solar-plan>*{position:relative;z-index:1}
 .buy-btn{margin-top:10px;width:100%;padding:8px 10px;border-radius:999px;border:none;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:11px;cursor:pointer;letter-spacing:.5px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
 .buy-btn:hover{transform:scale(1.03);box-shadow:0 6px 18px rgba(245,158,11,.35)}
 .buy-btn:active{transform:scale(.97)}
@@ -196,6 +196,53 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
     </div>
   </div>
 </div>
+
+<style>
+.withdraw-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(12px);z-index:10001;display:none;align-items:center;justify-content:center;padding:16px}
+.withdraw-modal-overlay.show{display:flex;animation:fadeIn .25s}
+.withdraw-modal{width:100%;max-width:380px;background:linear-gradient(135deg,#1a1e3a 0%,#151a33 100%);border:1px solid rgba(34,197,94,.22);border-radius:24px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05) inset;animation:modalIn .35s cubic-bezier(.16,1,.3,1)}
+.withdraw-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.withdraw-modal-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);display:grid;place-items:center;font-size:22px;box-shadow:0 6px 20px rgba(34,197,94,.25)}
+.withdraw-modal-title{font-weight:800;font-size:16px;color:#fff}
+.withdraw-modal-subtitle{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.withdraw-modal-body{background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:14px}
+.withdraw-modal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:12px;gap:12px}
+.withdraw-modal-row:last-child{border-bottom:none}
+.withdraw-modal-row span:first-child{color:rgba(255,255,255,.5)}
+.withdraw-modal-row b{color:#fff;text-align:right;word-break:break-word}
+.withdraw-modal-row .highlight{color:#22c55e;font-weight:800}
+.withdraw-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.withdraw-modal-btn{padding:12px;border-radius:12px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
+.withdraw-modal-btn.cancel{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08)}
+.withdraw-modal-btn.confirm{background:linear-gradient(90deg,#22c55e,#16a34a);color:#000;box-shadow:0 8px 20px rgba(34,197,94,.25)}
+.withdraw-modal-btn:active{transform:scale(.97)}
+</style>
+<div class="withdraw-modal-overlay" id="withdrawModal">
+  <div class="withdraw-modal">
+    <div class="withdraw-modal-header">
+      <div class="withdraw-modal-icon">↑</div>
+      <div>
+        <div class="withdraw-modal-title">Confirm Withdrawal</div>
+        <div class="withdraw-modal-subtitle">Diamond Petrol • Secure Withdraw</div>
+      </div>
+    </div>
+    <div class="withdraw-modal-body">
+      <div class="withdraw-modal-row"><span>Withdraw Amount</span><b class="highlight" id="wdModalAmount">RS 0</b></div>
+      <div class="withdraw-modal-row"><span>Account Type</span><b id="wdModalMethod">Easypaisa</b></div>
+      <div class="withdraw-modal-row"><span>Account</span><b id="wdModalAccount">••••</b></div>
+      <div class="withdraw-modal-row"><span>Remaining Income</span><b id="wdModalRemaining">RS 0</b></div>
+            <div class="withdraw-modal-row"><span>You Receive</span><b class="highlight" id="wdModalReceive">RS 0</b></div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:12px;text-align:center;line-height:1.5">
+      Once confirmed, this amount will be deducted from your Income Balance immediately and cannot be withdrawn again.
+    </div>
+    <div class="withdraw-modal-actions">
+      <button class="withdraw-modal-btn cancel" onclick="closeWithdrawModal()">✕ Cancel</button>
+      <button class="withdraw-modal-btn confirm" id="withdrawConfirmBtn" onclick="confirmWithdraw()">✓ Confirm Withdraw</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 <style>
 .notif-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:9998;display:none}
@@ -605,7 +652,7 @@ function renderApp(){
       <div class="invest">RS ${p.price.toLocaleString()} <small>invest</small></div>
       <div class="daily">⚡ RS ${p.daily}/day • 4% Daily</div>
       <div class="meta"><span>📅 15 days</span><span>↑ 4%</span><span>🪙 ${p.total} RS</span></div>
-      <button class="buy-btn" onclick="event.stopPropagation();investPlan(p.price,p.name,p.daily)">🛒 BUY OFFER • RS ${p.price.toLocaleString()}</button>
+      <button class="buy-btn" onclick="event.stopPropagation();investPlan(${p.price},${JSON.stringify(p.name)},${p.daily})">🛒 BUY OFFER • RS ${p.price.toLocaleString()}</button>
      </div>
     `).join('')}
    </div>
@@ -639,7 +686,7 @@ function renderApp(){
      <div><span style="color:#f59e0b;font-weight:700">2</span> Earn <b style="color:#fff">4% daily</b> petrol income for 15 days.</div>
      <div><span style="color:#f59e0b;font-weight:700">3</span> Collect your daily profit <b style="color:#fff">once every 24 hours</b>.</div>
      <div><span style="color:#f59e0b;font-weight:700">4</span> After 15 days, <b style="color:#fff">claim your investment</b> back.</div>
-     <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px">🛡️ 5% withdrawal fee • Min 500 RS • KYC Required</div>
+     <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px">🛡️ No withdrawal fee • Full amount received • Min 500 RS • KYC Required</div>
      <div style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:4px">🎧 24/7 VIP Support via Telegram • PSO & Shell Official Partners</div>
     </div>
    </div>
@@ -720,9 +767,8 @@ function renderApp(){
        <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.6)">
          <span>Total Earn: <b style="color:#fff">${totalEarn} RS</b></span>
          <span>Withdrawable: <b style="color:#4ade80">${totalEarn.toFixed(0)} RS</b></span>
-         <span>Tax: <b style="color:#4ade80">0% No Tax</b></span>
        </div>
-       <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(34,197,94,.2);font-size:10px;color:#4ade80;font-weight:700">✅ TOTAL EARN ${totalEarn} = ${totalEarn} WITHDRAW • No Tax • Baqi freeze</div>
+       <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(34,197,94,.2);font-size:10px;color:#4ade80;font-weight:700">✅ TOTAL EARN ${totalEarn} = ${totalEarn} WITHDRAW • Full amount available • Baqi freeze</div>
      </div>
 
      <div style="padding:18px;border-radius:16px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:2px solid rgba(99,102,241,.4);position:relative;overflow:hidden">
@@ -768,7 +814,7 @@ function renderApp(){
     <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.6)">
      <div>✅ Deposit via <b style="color:#fff">Easypaisa or JazzCash</b> • PSO Shell Official Account.</div>
      <div>✅ Withdraw to <b style="color:#fff">Easypaisa, JazzCash, or Bank</b> • KYC must be approved.</div>
-     <div>✅ Fee: <b style="color:#fff">5%</b> • Min: <b style="color:#fff">3000 RS</b> • Max: <b style="color:#fff">50000 RS</b>.</div>
+     <div>✅ No withdrawal fee • Full amount received • Min 500 RS.</div>
      <div>✅ All transactions require <b style="color:#fff">admin approval</b> • 2-3 hours.</div>
     </div>
    </div>
@@ -815,19 +861,18 @@ function renderApp(){
    ${!canWithdraw?`<div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:700;color:#fca5a5;font-size:13px">🔒 KYC Required for Withdraw</div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Withdraw KYC ke bagair nahi hoga. Profile > KYC me CNIC, Full Legal Name submit karen. Admin 24h me approve karega. Jab tak KYC approved nahi, withdraw blocked hai.</div><button onclick="switchPage('profile')" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:#f59e0b;color:#000;border:none;font-weight:700;font-size:11px">Go to KYC • Submit CNIC</button></div>`:''}
    <div class="solar-card" style="${!canWithdraw?'opacity:.6;pointer-events:none':''}">
     <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds • KYC ${canWithdraw?'Approved ✅':'Required 🔒'}</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ 0% fee - No Tax - Full withdraw. Min 500 RS. KYC approved required.</div></div></div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ Full amount withdraw. Min 500 RS. KYC approved required.</div></div></div>
     <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Processing: 2-3 hours max • Any time withdraw • KYC: ${kycStatus.toUpperCase()}</div></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${bal.toFixed(2)}</b></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>Withdrawal Fee (0% No Tax)</span><b style="color:#fff" id="wdFee">RS 0.00</b></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${totalEarn.toFixed(2)}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
-    <input id="wdAmount" type="number" placeholder="Min 3000 • Max 50000" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
+    <input id="wdAmount" type="number" placeholder="Min 500" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <div style="font-size:12px;margin-bottom:6px">💳 Account Type</div>
     <select id="wdMethod" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
     <div style="font-size:12px;margin-bottom:6px">📞 Account Number / IBAN (Must match KYC CNIC name)</div>
     <input id="wdAccount" type="tel" placeholder="Enter account number" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <button onclick="submitWithdraw()" class="solar-btn-orange" ${!canWithdraw?'disabled style="opacity:.5;cursor:not-allowed"':''}>✈️ Submit Withdraw ${!canWithdraw?'• KYC Required':''}</button>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 3000 RS • Max 50000 RS • 5% fee deducted • KYC approved required • Account must match CNIC name</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 500 RS • No fee • Full amount received • KYC approved required • Account must match CNIC name</div>
    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
@@ -954,7 +999,7 @@ function renderApp(){
   `;
  }
 }
-function calcWd(){const a=Number(document.getElementById('wdAmount')?.value||0);const fee=Math.ceil(a*0.05);const rec=a-fee;const f=document.getElementById('wdFee');const r=document.getElementById('wdReceive');if(f)f.textContent='RS '+fee.toFixed(2);if(r)r.textContent='RS '+rec.toFixed(2);}
+function calcWd(){const a=Number(document.getElementById('wdAmount')?.value||0);const r=document.getElementById('wdReceive');if(r)r.textContent='RS '+(a>0?a:0).toFixed(2);}
 function filterHistory(type,btn){
   document.querySelectorAll('.history-tab').forEach(b=>{b.style.background='transparent';b.style.color='#f59e0b';b.style.border='1px solid rgba(245,158,11,.3)'});
   btn.style.background='#f59e0b';btn.style.color='#000';btn.style.border='none';
@@ -1166,26 +1211,181 @@ function submitDeposit(){
 }
 
 
+let pendingWithdraw={amount:0,method:'',account:'',receive:0};
+
+function showWithdrawModal(amount,method,account){
+  pendingWithdraw={amount:amount,method:method,account:account,receive:amount};
+  const modal=document.getElementById('withdrawModal');
+  if(!modal)return;
+  document.getElementById('wdModalAmount').textContent='RS '+amount.toLocaleString();
+  document.getElementById('wdModalMethod').textContent=method||'Account';
+  document.getElementById('wdModalAccount').textContent=account;
+  document.getElementById('wdModalRemaining').textContent='RS '+Math.max(0,(currentUser.totalEarning||0)-amount).toFixed(2);
+  document.getElementById('wdModalReceive').textContent='RS '+amount.toLocaleString();
+  modal.classList.add('show');
+}
+
+function closeWithdrawModal(){
+  const modal=document.getElementById('withdrawModal');
+  if(modal)modal.classList.remove('show');
+  pendingWithdraw={amount:0,method:'',account:'',receive:0};
+}
+
 async function submitWithdraw(){
- var amount=Number(document.getElementById('wdAmount')?.value||0);var method=document.getElementById('wdMethod')?.value;var acc=document.getElementById('wdAccount')?.value.trim();
+ var amount=Number(document.getElementById('wdAmount')?.value||0);
+ var method=document.getElementById('wdMethod')?.value;
+ var acc=document.getElementById('wdAccount')?.value.trim();
+
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved','err');switchPage('profile');return;}
  if(!amount||amount<500){toast('Min 500','err');return;}
- var withdrawable = (currentUser.totalEarning||0); // Total Earn 1800 to 1800 he withdraw - no deduction
- if(amount>withdrawable){toast('❌ Only profit withdrawable • Total Earn: RS '+withdrawable.toFixed(0)+' • 1800 hai to 1800 he withdraw • No tax','err');return;}
- if(amount>currentUser.balance){toast('Insufficient balance','err');return;}
+
+ var incomeBalance=Number(currentUser.totalEarning||0);
+ if(amount>incomeBalance){
+   toast('❌ Income Balance me sirf RS '+incomeBalance.toFixed(2)+' available hai','err');
+   return;
+ }
+ if(amount>Number(currentUser.balance||0)){
+   toast('Insufficient balance','err');
+   return;
+ }
  if(!acc||acc.length<8){toast('Account required','err');return;}
- if(!confirm('Withdraw RS '+amount+' to '+acc+'?'))return;
+
+ // Do not use browser confirm(). The custom premium popup is used instead.
+ showWithdrawModal(amount,method,acc);
+}
+
+async function confirmWithdraw(){
+ if(isProcessing)return;
+
+ const amount=Number(pendingWithdraw.amount||0);
+ const method=pendingWithdraw.method;
+ const acc=pendingWithdraw.account;
+ if(!amount||amount<500||!acc)return;
+
+ const btn=document.getElementById('withdrawConfirmBtn');
+ if(btn){btn.disabled=true;btn.textContent='Processing...';}
+ isProcessing=true;
+
+ const userRef=db.collection('users').doc(currentUser.phone);
+ const withdrawId=Date.now().toString()+'_'+currentUser.phone+'_'+Math.random().toString(36).substr(2,6);
+ const nowIso=new Date().toISOString();
+
  try{
-  var fee=0;var receive=amount; // No tax per new rule - Total Earn 1800 to 1800 hi withdraw
-  var withdrawId=Date.now().toString()+'_'+currentUser.phone;
-  var tx={type:'withdraw',amount:amount,desc:'Withdraw to '+method+' '+acc+' - Pending',date:new Date().toISOString(),status:'pending',method:method,account:acc,fee:fee,receive:receive,withdrawId:withdrawId};
-  var wdDoc={id:withdrawId,phone:currentUser.phone,fullName:currentUser.fullName,amount:amount,method:method,account:acc,fee:fee,receive:receive,status:'pending',date:new Date().toISOString(),kycName:currentUser.kycData?.legalName||''};
-  await db.collection('withdrawRequests').doc(withdrawId).set(wdDoc);
-  var newBal=currentUser.balance-amount;
-  await db.collection('users').doc(currentUser.phone).update({balance:newBal,totalWithdraw:(currentUser.totalWithdraw||0)+amount,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-  currentUser.balance=newBal;currentUser.totalWithdraw=(currentUser.totalWithdraw||0)+amount;currentUser.transactions.push(tx);
-  toast('Withdraw RS '+amount+' requested • Wallet me pending','ok');renderApp();switchPage('wallet');
- }catch(e){toast(e.message,'err');}
+   let withdrawalData=null;
+   let userReserved=false;
+
+   await db.runTransaction(async function(transaction){
+     const snap=await transaction.get(userRef);
+     if(!snap.exists) throw new Error('User account not found');
+
+     const latest=snap.data();
+     const latestIncome=Number(latest.totalEarning||0);
+     const latestBalance=Number(latest.balance||0);
+
+     if((latest.kycStatus||'not_submitted')!=='approved'){
+       throw new Error('KYC not approved');
+     }
+     if(amount<500) throw new Error('Minimum withdraw is RS 500');
+     if(amount>latestIncome){
+       throw new Error('Income Balance me sirf RS '+latestIncome.toFixed(2)+' available hai');
+     }
+     if(amount>latestBalance){
+       throw new Error('Insufficient balance');
+     }
+
+     const tx={
+       type:'withdraw',
+       amount:amount,
+       desc:'Withdraw to '+method+' '+acc+' - Pending',
+       date:nowIso,
+       status:'pending',
+       method:method,
+       account:acc,
+       fee:0,
+       receive:amount,
+       withdrawId:withdrawId
+     };
+
+     withdrawalData={
+       id:withdrawId,
+       phone:latest.phone||currentUser.phone,
+       fullName:latest.fullName||currentUser.fullName,
+       amount:amount,
+       method:method,
+       account:acc,
+       fee:0,
+       receive:amount,
+       status:'pending',
+       date:nowIso,
+       kycName:latest.kycData?.legalName||''
+     };
+
+     transaction.update(userRef,{
+       balance:latestBalance-amount,
+       totalEarning:latestIncome-amount,
+       totalWithdraw:Number(latest.totalWithdraw||0)+amount,
+       transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+     });
+   });
+   userReserved=true;
+
+   // Create the withdrawal request after the atomic user balance reservation.
+   await db.collection('withdrawRequests').doc(withdrawId).set(withdrawalData);
+
+   currentUser.balance=Number(currentUser.balance||0)-amount;
+   currentUser.totalEarning=Math.max(0,Number(currentUser.totalEarning||0)-amount);
+   currentUser.totalWithdraw=Number(currentUser.totalWithdraw||0)+amount;
+
+   const localTx={
+     type:'withdraw',
+     amount:amount,
+     desc:'Withdraw to '+method+' '+acc+' - Pending',
+     date:nowIso,
+     status:'pending',
+     method:method,
+     account:acc,
+     fee:0,
+     receive:amount,
+     withdrawId:withdrawId
+   };
+   currentUser.transactions=[...(currentUser.transactions||[]),localTx];
+
+   closeWithdrawModal();
+   renderApp();
+   switchPage('wallet');
+   toast('Withdraw RS '+amount.toLocaleString()+' submitted','ok');
+
+ }catch(e){
+   // If the request creation failed after the user transaction, restore the reserved
+   // amount so the user is never left with a deduction but no withdrawal request.
+   if(withdrawalData && userReserved){
+     try{
+       await db.collection('users').doc(currentUser.phone).update({
+         balance:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
+         totalEarning:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
+         totalWithdraw:firebase.firestore.FieldValue.increment(-(Number(withdrawalData.amount)||0)),
+         transactions:firebase.firestore.FieldValue.arrayRemove({
+           type:'withdraw',
+           amount:withdrawalData.amount,
+           desc:'Withdraw to '+method+' '+acc+' - Pending',
+           date:nowIso,
+           status:'pending',
+           method:method,
+           account:acc,
+           fee:0,
+           receive:amount,
+           withdrawId:withdrawId
+         })
+       });
+     }catch(rollbackErr){
+       console.error('Withdraw rollback failed:',rollbackErr);
+     }
+   }
+   toast(e.message||'Withdraw failed','err');
+ }finally{
+   isProcessing=false;
+   if(btn){btn.disabled=false;btn.textContent='✓ Confirm Withdraw';}
+ }
 }
 async function submitKyc(){
  const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value||'2000-01-01';const father=document.getElementById('kycFather')?.value.trim()||'As per CNIC';const addr=document.getElementById('kycAddr')?.value.trim()||'As per CNIC';const agree=document.getElementById('kycAgree')?.checked;
