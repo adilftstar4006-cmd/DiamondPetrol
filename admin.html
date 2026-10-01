@@ -453,7 +453,7 @@ async function confirmDeposit(id,phone,amount){
     var newTotalDep=(userData.totalDeposit||0)+Number(amount);
     await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
     await db.collection('depositRequests').doc(id).update({status:'approved',approvedAt:new Date().toISOString()});
-    showToast('✅ Approved RS '+amount+' • New Bal: '+newBal,'ok');
+    showToast('✅ Approved RS '+amount+' • New Remaining Balance: '+newBal,'ok');
     setTimeout(function(){isAdminProcessing=false;},800);
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
 }
@@ -549,7 +549,7 @@ async function approveOldDeposit(phone, idx, amount){
     var newBal=(userData.balance||0)+Number(amount);
     var newTotalDep=(userData.totalDeposit||0)+Number(amount);
     await db.collection('users').doc(phone).update({balance:newBal,totalDeposit:newTotalDep,transactions:txs});
-    showToast('✅ OLD Approved RS '+amount+' • Bal: '+newBal,'ok');
+    showToast('✅ OLD Approved RS '+amount+' • Remaining: '+newBal,'ok');
     isAdminProcessing=false;
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
 }
