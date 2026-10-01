@@ -353,10 +353,12 @@ function switchPage(t){
   currentPage=t;
   document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('nav-'+t)?.classList.add('active');
-  renderApp();
+  // Navigation must always repaint synchronously; background Firebase work must not block it.
+  try{renderApp();}catch(e){console.error('renderApp navigation error',e);}
   if(t==='wallet'){
     setTimeout(function(){try{renderWalletPending();}catch(e){}},150);
   }
+  window.scrollTo({top:0,behavior:'instant'});
 }
 function openNotif(){var p=document.getElementById('notifPanel');var o=document.getElementById('notifOverlay');if(p)p.classList.add('show');if(o)o.classList.add('show');renderNotifList();if(currentUser&&currentUser.phone)localStorage.setItem('diamond_notif_read_'+currentUser.phone, Date.now().toString());updateBellBadge();}
 function closeNotif(){var p=document.getElementById('notifPanel');var o=document.getElementById('notifOverlay');if(p)p.classList.remove('show');if(o)o.classList.remove('show');}
@@ -636,7 +638,24 @@ async function doLogin(){
  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
-function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}settleMaturedOffers().then(function(){renderApp();});startListener();try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}setTimeout(function(){updateBellBadge();renderWalletPending();},500);}
+let settleInFlight=false;
+function showApp(){
+ if(!currentUser)return;
+ document.getElementById('auth').style.display='none';
+ document.getElementById('app').classList.add('active');
+ document.getElementById('topName').textContent=currentUser.fullName||'meai';
+ try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}
+ // Render immediately. Maturity settlement must never block the first Home paint.
+ renderApp();
+ startListener();
+ try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}
+ setTimeout(function(){updateBellBadge();renderWalletPending();},150);
+ // Run offer settlement in the background and refresh only after it finishes.
+ if(!settleInFlight){
+   settleInFlight=true;
+   settleMaturedOffers().then(function(){renderApp();}).catch(function(e){console.error('background settlement',e);}).finally(function(){settleInFlight=false;});
+ }
+}
 
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
@@ -1083,8 +1102,10 @@ async function confirmInvest(){
   finally{isProcessing=false;}
 }
 async function investPlan(a,n,d){
-  if(isProcessing)return;
-  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance.toFixed(2)+' - Pehle deposit karo','err');return;}
+  if(!currentUser){toast('Please login again','err');return;}
+  if(isProcessing){toast('Please wait, previous request is still processing','err');return;}
+  const remaining=Number(currentUser.balance||0);
+  if(remaining<a){toast('Insufficient RS '+remaining.toFixed(2)+' - Pehle deposit karo','err');return;}
   // Professional modal instead of ugly confirm popup
   showInvestModal(a,n,d);
 }
@@ -1462,7 +1483,27 @@ async function loadCurrent(){
     console.error('loadCurrent error', e);
   }
 }
-function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;var fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){var oldTxs=currentUser.transactions||[];var newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;settleMaturedOffers().then(function(){renderApp();});updateBellBadge();renderWalletPending();}});}
+function startListener(){
+ if(!currentUser||unsub)return;
+ unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{
+   if(!s.exists)return;
+   var fb=s.data();
+   if(JSON.stringify(fb)!==JSON.stringify(currentUser)){
+     var oldTxs=currentUser.transactions||[];
+     var newTxs=fb.transactions||[];
+     checkForApprovedDeposit(oldTxs,newTxs);
+     currentUser=fb;
+     // Show Firestore updates immediately. Settlement is secondary background work.
+     renderApp();
+     updateBellBadge();
+     renderWalletPending();
+     if(!settleInFlight){
+       settleInFlight=true;
+       settleMaturedOffers().then(function(){renderApp();}).catch(function(e){console.error('listener settlement',e);}).finally(function(){settleInFlight=false;});
+     }
+   }
+ });
+}
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
 </script>
