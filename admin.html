@@ -200,6 +200,7 @@ button,input,select,textarea{font:inherit}button{touch-action:manipulation}
 <div class="metric"><div class="icon">⚡</div><div id="userCount" class="num" style="font-size:13px;color:#8b93aa">0</div><div class="label">Live Records</div></div>
 </div>
 <section class="admin-section"><div class="section-head"><h3>⏳ Pending Requests</h3><span class="count" id="pendingCountLabel">Live</span></div><div id="pendingList"><div class="empty">Loading requests...</div></div></section>
+<section class="admin-section"><div class="section-head"><h3>🕒 Withdrawal Cooldowns</h3><span class="count">Live • Admin control</span></div><div id="withdrawCooldownList"><div class="empty">Loading cooldowns...</div></div></section>
 <section class="admin-section"><div class="section-head"><h3>👥 All Users</h3><span class="count" id="userCountLabel">0 users</span></div><input id="userSearch" class="search-box" type="search" placeholder="Search name, phone, CNIC or referral..." oninput="renderUsers()"><div id="usersTable"><div class="empty">Loading users...</div></div></section>
 <section class="admin-section"><div class="section-head"><h3>🪪 KYC Pending</h3><span class="count">Review & approve</span></div><div id="kycList"><div class="empty">Loading KYC...</div></div></section>
 </div></div>
@@ -264,7 +265,7 @@ function loadData(){
   document.getElementById('totalBalance').textContent='Rs '+totalBal.toLocaleString();
   document.getElementById('kycPending').textContent=kycPend;
   document.getElementById('userCount').textContent=allUsers.length;
-  renderKyc();renderUsers();renderPending();
+  renderKyc();renderUsers();renderPending();renderWithdrawCooldowns();
  });
  db.collection('depositRequests').where('status','==','pending').onSnapshot(function(snap){depositCache=[];snap.forEach(function(doc){depositCache.push(doc.data());});renderPending();});
  db.collection('withdrawRequests').where('status','==','pending').onSnapshot(function(snap){withdrawCache=[];snap.forEach(function(doc){withdrawCache.push(doc.data());});renderPending();});
@@ -279,6 +280,37 @@ function renderKyc(){
   html+='<div class="admin-item"><div class="item-main"><div class="item-avatar">ID</div><div class="item-info"><div class="name">'+esc(name)+'</div><div class="meta">'+esc(u.phone||'')+'<br>CNIC: '+esc((u.kycData&&u.kycData.cnic)||'')+'</div></div><span class="pill gold">PENDING</span></div><div class="item-actions"><button class="btn-small btn-approve" onclick="openKycModal(\''+escAttr(u.phone)+'\')">View KYC</button><button class="btn-small btn-edit" onclick="openEdit(\''+escAttr(u.phone)+'\')">Edit User</button></div></div>';
  }
  div.innerHTML=html;
+}
+function formatAdminCooldown(ms){
+ ms=Math.max(0,Number(ms||0));
+ var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),sec=Math.floor((ms%60000)/1000);
+ return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+function renderWithdrawCooldowns(){
+ var div=document.getElementById('withdrawCooldownList'); if(!div)return;
+ var now=Date.now(), rows=[];
+ for(var i=0;i<allUsers.length;i++){
+   var u=allUsers[i], until=Number(u.withdrawCooldownUntil||0);
+   if(until>now) rows.push({u:u,until:until});
+ }
+ if(!rows.length){div.innerHTML='<div class="empty">✓ No active withdrawal cooldowns</div>';return;}
+ rows.sort(function(a,b){return a.until-b.until;});
+ var html='';
+ for(var i=0;i<rows.length;i++){
+   var u=rows[i].u, until=rows[i].until;
+   html+='<div class="admin-item" style="margin-bottom:8px"><div class="item-main"><div class="item-avatar" style="background:rgba(245,158,11,.12);color:#f59e0b">⏳</div><div class="item-info"><div class="name">'+esc(u.fullName||'User')+'</div><div class="meta">'+esc(u.phone||'')+' • Ends: '+new Date(until).toLocaleString()+'</div></div><span class="pill gold" id="cd_'+escAttr(u.phone)+'">'+formatAdminCooldown(until-now)+'</span></div><div class="item-actions"><button class="btn-small btn-blue" onclick="setWithdrawCooldown(\''+escAttr(u.phone)+'\',0)">Clear</button><button class="btn-small btn-edit" onclick="setWithdrawCooldown(\''+escAttr(u.phone)+'\',6)">6h</button><button class="btn-small btn-edit" onclick="setWithdrawCooldown(\''+escAttr(u.phone)+'\',12)">12h</button><button class="btn-small btn-edit" onclick="setWithdrawCooldown(\''+escAttr(u.phone)+'\',24)">24h</button></div></div>';
+ }
+ div.innerHTML=html;
+}
+async function setWithdrawCooldown(phone,hours){
+ if(isAdminProcessing)return;
+ isAdminProcessing=true;
+ try{
+   var until=hours>0?Date.now()+Number(hours)*60*60*1000:0;
+   await db.collection('users').doc(phone).update({withdrawCooldownUntil:until});
+   showToast(hours>0?'✅ Cooldown set to '+hours+'h':'✅ Cooldown cleared','ok');
+ }catch(e){showToast('❌ '+e.message,'err');}
+ isAdminProcessing=false;
 }
 function renderUsers(){
  var div=document.getElementById('usersTable'),inp=document.getElementById('userSearch'),q=(inp?inp.value:'').trim().toLowerCase();
@@ -500,8 +532,8 @@ async function confirmRejectWithdraw(id,phone,amount){
     var userData=userDoc.data();
     var txs=(userData.transactions||[]).slice();
     for(var i=0;i<txs.length;i++){if(txs[i].withdrawId===id && txs[i].status==='pending'){txs[i].status='rejected';break;}}
-    var newBal=(userData.balance||0)+Number(amount);
-    await db.collection('users').doc(phone).update({balance:newBal,transactions:txs});
+    var newIncome=Number(userData.totalEarning||0)+Number(amount);
+    await db.collection('users').doc(phone).update({totalEarning:newIncome,withdrawCooldownUntil:0,transactions:txs});
     await db.collection('withdrawRequests').doc(id).update({status:'rejected'});
     showToast('❌ Rejected + Refunded RS '+amount,'ok');
     setTimeout(function(){isAdminProcessing=false;},800);
@@ -588,8 +620,8 @@ async function rejectOldWithdraw(phone, idx, amount){
     var userData=userDoc.data();
     var txs=(userData.transactions||[]).slice();
     txs[idx].status='rejected';
-    var newBal=(userData.balance||0)+Number(amount);
-    await db.collection('users').doc(phone).update({balance:newBal,transactions:txs});
+    var newIncome=Number(userData.totalEarning||0)+Number(amount);
+    await db.collection('users').doc(phone).update({totalEarning:newIncome,withdrawCooldownUntil:0,transactions:txs});
     showToast('❌ OLD Rejected + Refunded','ok');
     isAdminProcessing=false;
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
