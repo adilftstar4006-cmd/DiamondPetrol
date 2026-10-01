@@ -307,7 +307,7 @@ async function setWithdrawCooldown(phone,hours){
  isAdminProcessing=true;
  try{
    var until=hours>0?Date.now()+Number(hours)*60*60*1000:0;
-   await db.collection('users').doc(phone).update({withdrawCooldownUntil:until});
+   await db.collection('users').doc(phone).update({withdrawCooldownUntil:until,withdrawCooldownManual:true});
    showToast(hours>0?'✅ Cooldown set to '+hours+'h':'✅ Cooldown cleared','ok');
  }catch(e){showToast('❌ '+e.message,'err');}
  isAdminProcessing=false;
@@ -512,11 +512,25 @@ async function confirmWithdraw(id,phone,amount){
   closeApprovalModal();
   try{
     showToast('⏳ Approving withdraw...','ok');
-    var userDoc=await db.collection('users').doc(phone).get();
-    var txs=(userDoc.data().transactions||[]).slice();
-    for(var i=0;i<txs.length;i++){if(txs[i].withdrawId===id && txs[i].status==='pending'){txs[i].status='approved';break;}}
-    await db.collection('users').doc(phone).update({transactions:txs});
-    await db.collection('withdrawRequests').doc(id).update({status:'approved'});
+    // Approval does NOT refund or change Income. The withdrawal amount was
+    // already reserved atomically when the user submitted the request.
+    await db.runTransaction(async function(transaction){
+      var userRef=db.collection('users').doc(phone);
+      var reqRef=db.collection('withdrawRequests').doc(id);
+      var userDoc=await transaction.get(userRef);
+      if(!userDoc.exists) throw new Error('User not found');
+      var data=userDoc.data(), txs=(data.transactions||[]).slice(), found=false;
+      for(var i=0;i<txs.length;i++){
+        if(txs[i].withdrawId===id){
+          if(txs[i].status==='approved') { found=true; break; }
+          if(txs[i].status!=='pending') throw new Error('Withdrawal is no longer pending');
+          txs[i].status='approved'; found=true; break;
+        }
+      }
+      if(!found) throw new Error('Withdrawal transaction not found');
+      transaction.update(userRef,{transactions:txs});
+      transaction.update(reqRef,{status:'approved'});
+    });
     showToast('✅ Withdraw Approved','ok');
     setTimeout(function(){isAdminProcessing=false;},800);
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
@@ -528,13 +542,27 @@ async function confirmRejectWithdraw(id,phone,amount){
   closeApprovalModal();
   try{
     showToast('⏳ Rejecting + refund...','ok');
-    var userDoc=await db.collection('users').doc(phone).get();
-    var userData=userDoc.data();
-    var txs=(userData.transactions||[]).slice();
-    for(var i=0;i<txs.length;i++){if(txs[i].withdrawId===id && txs[i].status==='pending'){txs[i].status='rejected';break;}}
-    var newIncome=Number(userData.totalEarning||0)+Number(amount);
-    await db.collection('users').doc(phone).update({totalEarning:newIncome,withdrawCooldownUntil:0,transactions:txs});
-    await db.collection('withdrawRequests').doc(id).update({status:'rejected'});
+    // Reject refunds Income exactly once, only while the request is pending.
+    await db.runTransaction(async function(transaction){
+      var userRef=db.collection('users').doc(phone);
+      var reqRef=db.collection('withdrawRequests').doc(id);
+      var userDoc=await transaction.get(userRef);
+      if(!userDoc.exists) throw new Error('User not found');
+      var userData=userDoc.data(), txs=(userData.transactions||[]).slice(), found=false, wasPending=false;
+      for(var i=0;i<txs.length;i++){
+        if(txs[i].withdrawId===id){
+          found=true;
+          if(txs[i].status==='rejected') break;
+          if(txs[i].status!=='pending') throw new Error('Withdrawal is no longer pending');
+          txs[i].status='rejected'; wasPending=true; break;
+        }
+      }
+      if(!found) throw new Error('Withdrawal transaction not found');
+      var updates={transactions:txs,withdrawCooldownUntil:0,withdrawCooldownManual:true};
+      if(wasPending) updates.totalEarning=Number(userData.totalEarning||0)+Number(amount);
+      transaction.update(userRef,updates);
+      transaction.update(reqRef,{status:'rejected'});
+    });
     showToast('❌ Rejected + Refunded RS '+amount,'ok');
     setTimeout(function(){isAdminProcessing=false;},800);
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
@@ -616,12 +644,17 @@ async function rejectOldWithdraw(phone, idx, amount){
   if(isAdminProcessing)return;
   isAdminProcessing=true;
   try{
-    var userDoc=await db.collection('users').doc(phone).get();
-    var userData=userDoc.data();
-    var txs=(userData.transactions||[]).slice();
-    txs[idx].status='rejected';
-    var newIncome=Number(userData.totalEarning||0)+Number(amount);
-    await db.collection('users').doc(phone).update({totalEarning:newIncome,withdrawCooldownUntil:0,transactions:txs});
+    await db.runTransaction(async function(transaction){
+      var userRef=db.collection('users').doc(phone);
+      var userDoc=await transaction.get(userRef);
+      if(!userDoc.exists)throw new Error('User not found');
+      var userData=userDoc.data(),txs=(userData.transactions||[]).slice();
+      if(!txs[idx]||txs[idx].type!=='withdraw')throw new Error('Withdrawal transaction not found');
+      if(txs[idx].status==='rejected')return;
+      if(txs[idx].status!=='pending')throw new Error('Withdrawal is no longer pending');
+      txs[idx].status='rejected';
+      transaction.update(userRef,{totalEarning:Number(userData.totalEarning||0)+Number(amount),withdrawCooldownUntil:0,withdrawCooldownManual:true,transactions:txs});
+    });
     showToast('❌ OLD Rejected + Refunded','ok');
     isAdminProcessing=false;
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
