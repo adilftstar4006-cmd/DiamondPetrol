@@ -502,7 +502,7 @@ async function doSignup(){
     referredBy:ref||'',
     referredByPhone:referredByPhone||'',
     referredByChain:referredByChain||[],
-    balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,
+    balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,frozenBalance:0,
     referralsCount:0,referralEarnings:0,
     kycStatus:'not_submitted',kycData:null,activeInvests:[],withdrawHistory:[],
     transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],
@@ -564,7 +564,7 @@ async function distributeDepositBonus(depositAmount, depositorPhone, depositorNa
       const refData=refSnap.data();
       await db.collection('users').doc(refPhone).update({
         balance: (refData.balance||0)+bonus,
-        frozenBalance: (refData.frozenBalance||0)+bonus,
+        balance: (refData.balance||0)+bonus,
         referralEarnings: (refData.referralEarnings||0)+bonus,
         transactions: firebase.firestore.FieldValue.arrayUnion({
           type:'referral_frozen',
@@ -609,7 +609,7 @@ async function distributeProfitBonus(profitAmount, earnerPhone, earnerName, plan
       const refData=refSnap.data();
       await db.collection('users').doc(refPhone).update({
         balance: (refData.balance||0)+bonus,
-        frozenBalance: (refData.frozenBalance||0)+bonus,
+        balance: (refData.balance||0)+bonus,
         referralEarnings: (refData.referralEarnings||0)+bonus,
         transactions: firebase.firestore.FieldValue.arrayUnion({
           type:'referral_frozen',
@@ -636,7 +636,7 @@ async function doLogin(){
  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
-function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}renderApp();startListener();try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}setTimeout(function(){updateBellBadge();renderWalletPending();},500);}
+function showApp(){if(!currentUser)return;document.getElementById('auth').style.display='none';document.getElementById('app').classList.add('active');document.getElementById('topName').textContent=currentUser.fullName||'meai';try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}settleMaturedOffers().then(function(){renderApp();});startListener();try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}setTimeout(function(){updateBellBadge();renderWalletPending();},500);}
 
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
@@ -688,8 +688,8 @@ function renderApp(){
       <div style="background:#0d1023;border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
        <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:12px">${a.planName} • RS ${(a.amount||0).toLocaleString()} • ${a.company||'PSO'}</div><div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px">Daily: RS ${a.daily} • Claimed: RS ${a.totalClaimed||0} • ${a.daysCompleted||0}/15 days</div><div style="margin-top:6px;height:5px;background:#1a1a1a;border-radius:999px;overflow:hidden"><div style="height:100%;width:${Math.min(100,(a.daysCompleted||0)/15*100)}%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div></div>
        <div style="display:flex;flex-direction:column;gap:6px">${(()=>{const st=getClaimStatus(a); 
-      if((a.daysCompleted||0)>=15 && a.status==='active'){
-        return `<button onclick="claimPrincipal('${a.id}')" style="padding:8px 16px;border-radius:999px;background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#000;font-weight:800;font-size:11px;border:none;cursor:pointer;animation:glowPulse 2s infinite">❄️ CLAIM PRINCIPAL • RS ${a.amount} • Frozen me wapas</button>`;
+      if(Number(a.endDate||0)>0 && Date.now()>=Number(a.endDate||0)){
+        return `<span style="padding:8px 12px;border-radius:999px;background:rgba(34,197,94,.12);color:#22c55e;font-weight:800;font-size:10px">↻ RETURNING TO REMAINING</span>`;
       }
       return `<button onclick="${st.canClaim?`claimOne('${a.id}')`:`toast('Next claim in ${st.text} - Har 24h me ek baar','err')`}" style="padding:8px 16px;border-radius:999px;background:${st.canClaim?'linear-gradient(90deg,#22c55e,#16a34a)':'linear-gradient(90deg,#374151,#4b5563)'};color:${st.canClaim?'#000':'#9ca3af'};font-weight:800;font-size:11px;border:none;cursor:${st.canClaim?'pointer':'not-allowed'};${st.canClaim?'animation:glowPulse 2s infinite':''}">${st.canClaim?'💰 DAILY COLLECT • RS '+a.daily:'⏳ '+st.text}</button>`;})()}}<div style="font-size:9px;color:rgba(255,255,255,.4);text-align:center">Collect every 24h</div></div>
       </div>
@@ -704,7 +704,7 @@ function renderApp(){
      <div><span style="color:#f59e0b;font-weight:700">1</span> Choose a PSO/Shell petrol plan & invest once.</div>
      <div><span style="color:#f59e0b;font-weight:700">2</span> Earn <b style="color:#fff">4% daily</b> petrol income for 15 days.</div>
      <div><span style="color:#f59e0b;font-weight:700">3</span> Collect your daily profit <b style="color:#fff">once every 24 hours</b>.</div>
-     <div><span style="color:#f59e0b;font-weight:700">4</span> After 15 days, <b style="color:#fff">claim your investment</b> back.</div>
+     <div><span style="color:#f59e0b;font-weight:700">4</span> After 15 days, your principal automatically returns to Remaining Balance.</div>
      <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px">🛡️ No withdrawal fee • Full amount received • Min 500 RS • KYC Required</div>
      <div style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:4px">🎧 24/7 VIP Support via Telegram • PSO & Shell Official Partners</div>
     </div>
@@ -764,11 +764,10 @@ function renderApp(){
          </div>
          <div style="font-size:28px">🔒</div>
        </div>
-       <div style="font-size:32px;font-weight:900;color:#fff;margin-top:12px">RS ${( (currentUser.totalDeposit||0) + (currentUser.frozenBalance||0) ).toFixed(0)}</div>
+       <div style="font-size:32px;font-weight:900;color:#fff;margin-top:12px">RS ${(currentUser.frozenBalance||0).toFixed(2)}</div>
        <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:rgba(255,255,255,.6)">
-         <span>Deposits: <b style="color:#fff">${totalDep} RS</b></span>
-         <span>Active: <b style="color:#fbbf24">${(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((s,i)=>s+(i.amount||0),0)} RS</b></span>
-         <span>Ref 2%: <b style="color:#a78bfa">${(currentUser.frozenBalance||0)} RS</b></span>
+         <span>Active Offers: <b style="color:#fff">${(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((s,i)=>s+(i.amount||0),0)} RS</b></span>
+         <span>Locked: <b style="color:#fbbf24">${(currentUser.frozenBalance||0).toFixed(2)} RS</b></span>
        </div>
        <div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(6,182,212,.15);font-size:10px;color:#22d3ee;font-weight:700">❌ WITHDRAW NAHI • Sirf offer ke liye use hoga</div>
      </div>
@@ -811,9 +810,9 @@ function renderApp(){
    <div style="padding:12px;border-radius:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);margin-bottom:12px">
      <div style="font-size:12px;font-weight:800;color:#fbbf24;margin-bottom:6px">ℹ️ 3 BALANCE - Saaf Saaf Samjho:</div>
      <div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.6">
-       <b style="color:#22d3ee">1. Freez Balance (🔒):</b> Jo deposit hua wo freeze, withdraw nahi. Deposits + Active offers + Referral 2%<br>
-       <b style="color:#4ade80">2. Income Balance (💰):</b> Jo earn hua, sirf ye withdraw hoga. Total profit - withdrawals<br>
-       <b style="color:#818cf8">3. Remaining Balance (💳):</b> Offer lagane ke baad jo bacha, is se dobara offer le sakty, 15 din lock
+       <b style="color:#22d3ee">1. Freez Balance (🔒):</b> Sirf active offer ka amount freeze hota hai. Deposit direct Remaining Balance me aata hai.<br>
+       <b style="color:#4ade80">2. Income Balance (💰):</b> Daily claim ki hui income sirf yahan aati hai. Yehi withdrawable balance hai.<br>
+       <b style="color:#818cf8">3. Remaining Balance (💳):</b> Available Remaining Balance, is se offer le sakty hain.
      </div>
    </div>
     ${kycStatus!=='approved'?`<div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);font-size:11px;color:#fca5a5">⚠️ KYC Required for Withdraw • Profile > KYC Submit CNIC & Full Legal Name</div>`:''}
@@ -1044,22 +1043,44 @@ function closeInvestModal(){
 }
 async function confirmInvest(){
   const {a,n,d}=pendingInvest;
-  if(!a) return;
+  if(!a)return;
   closeInvestModal();
-  if(currentUser.balance<a){toast('Insufficient RS '+currentUser.balance.toFixed(2)+' - Pehle deposit karo','err');return;}
+  if(Number(currentUser.balance||0)<a){toast('Insufficient Remaining Balance RS '+Number(currentUser.balance||0).toFixed(2),'err');return;}
   isProcessing=true;
   try{
-    const nb=currentUser.balance-a;
-    const ni=(currentUser.totalDeposit||0)+a;
-    const planCompany=PLANS.find(p=>p.price===a)?.company||'PSO';
-    const na=[...(currentUser.activeInvests||[]),{id:Date.now().toString(),planId:PLANS.find(p=>p.price===a)?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,startDate:Date.now(),lastClaimDate:Date.now(),totalClaimed:0,daysCompleted:0,status:'active'}];
-    const tx={type:'invest',amount:a,desc:'Invest '+n+' ('+planCompany+')', date:new Date().toISOString(),status:'approved'};
-    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalDeposit:ni,activeInvests:na,frozenBalance:currentUser.frozenBalance||0,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-    currentUser.balance=nb;currentUser.totalDeposit=ni;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
-    distributeDepositBonus(a, currentUser.phone, currentUser.fullName);
+    const userRef=db.collection('users').doc(currentUser.phone);
+    const investId=Date.now().toString()+'_'+Math.random().toString(36).substr(2,6);
+    const now=Date.now();
+    const plan=PLANS.find(p=>p.price===a);
+    const planCompany=plan?.company||'PSO';
+    let after=null;
+    await db.runTransaction(async function(transaction){
+      const snap=await transaction.get(userRef);
+      if(!snap.exists)throw new Error('User account not found');
+      const u=snap.data(), remaining=Number(u.balance||0), frozen=Number(u.frozenBalance||0);
+      if(remaining<a)throw new Error('Insufficient Remaining Balance RS '+remaining.toFixed(2));
+      const inv={
+        id:investId,planId:plan?.id||1,planName:n,company:planCompany,amount:a,daily:d,dailyProfit:d,
+        startDate:now,endDate:now+(15*24*60*60*1000),lastClaimDate:now,totalClaimed:0,daysCompleted:0,status:'active'
+      };
+      const tx={type:'invest',amount:a,desc:'Offer Activated '+n+' ('+planCompany+') - 15 Days Locked',date:new Date().toISOString(),status:'approved'};
+      transaction.update(userRef,{
+        balance:remaining-a,
+        frozenBalance:frozen+a,
+        activeInvests:firebase.firestore.FieldValue.arrayUnion(inv),
+        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+      });
+      after={remaining:remaining-a,frozen:frozen+a,inv:inv,tx:tx};
+    });
+    currentUser.balance=after.remaining;
+    currentUser.frozenBalance=after.frozen;
+    currentUser.activeInvests=[...(currentUser.activeInvests||[]),after.inv];
+    currentUser.transactions=[...(currentUser.transactions||[]),after.tx];
+    distributeDepositBonus(a,currentUser.phone,currentUser.fullName);
     renderApp();
-    toast('✅ Invested RS '+a.toLocaleString()+' in '+n+' ('+planCompany+') • Daily RS '+d+' • Referrer ko 2% frozen me','ok');
-  }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
+    toast('✅ Offer activated • RS '+a.toLocaleString()+' Freeze ho gaya • 15 days','ok');
+  }catch(e){toast(e.message,'err');}
+  finally{isProcessing=false;}
 }
 async function investPlan(a,n,d){
   if(isProcessing)return;
@@ -1073,58 +1094,66 @@ async function claimOne(id){
   if(isProcessing)return;
   const inv=currentUser.activeInvests.find(i=>i.id===id);
   if(!inv)return;
-  // Check 24h cooldown
-  const now=Date.now();
-  const lastClaim=inv.lastClaimDate||0;
-  const cooldown=24*60*60*1000; // 24 hours
-  const diff=now-lastClaim;
-  // Allow first claim if daysCompleted==0 and totalClaimed==0 (just purchased) - no cooldown for first claim after 1 min
-  const isFirstClaim = (inv.daysCompleted||0)==0 && (inv.totalClaimed||0)==0;
-  if(!isFirstClaim && diff < cooldown){
-    const remaining=cooldown-diff;
-    const hrs=Math.floor(remaining/3600000);
-    const mins=Math.floor((remaining%3600000)/60000);
-    const secs=Math.floor((remaining%60000)/1000);
-    toast(`⏳ Already claimed! Next claim in ${hrs}h ${mins}m ${secs}s • Har 24 ghante me ek baar hi claim hota hai`,'err');
-    return;
-  }
-  if((inv.daysCompleted||0)>=15){
-    toast('✅ 15 days completed! Ab principal claim karo - Plan finished','err');
-    return;
+  const now=Date.now(),endDate=Number(inv.endDate||Number(inv.startDate||0)+(15*24*60*60*1000));
+  if(now>=endDate){await settleMaturedOffers();renderApp();toast('✅ 15 days complete • Principal Remaining Balance me wapas aa gaya','ok');return;}
+  const lastClaim=Number(inv.lastClaimDate||0),cooldown=24*60*60*1000,diff=now-lastClaim;
+  const first=(Number(inv.daysCompleted||0)===0&&Number(inv.totalClaimed||0)===0);
+  if(!first&&diff<cooldown){
+    const rem=cooldown-diff,hrs=Math.floor(rem/3600000),mins=Math.floor((rem%3600000)/60000),secs=Math.floor((rem%60000)/1000);
+    toast(`⏳ Next claim in ${hrs}h ${mins}m ${secs}s`,'err');return;
   }
   isProcessing=true;
   try{
-    const p=inv.daily||0;
-    const nb=currentUser.balance+p;
-    const ne=(currentUser.totalEarning||0)+p;
-    const na=currentUser.activeInvests.map(i=>i.id===id?{...i,totalClaimed:(i.totalClaimed||0)+p,daysCompleted:(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i);
-    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+') - Day '+(inv.daysCompleted+1)+'/15', date:new Date().toISOString(),status:'approved'};
-    await db.collection('users').doc(currentUser.phone).update({balance:nb,totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-    currentUser.balance=nb;currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
-    // REFERRAL: Jitna jeety ga utna hisa referrer ko bhi milega - L1 10%, L2 5%, L3 2% of profit
-    distributeProfitBonus(p, currentUser.phone, currentUser.fullName, inv.planName);
+    const p=Number(inv.daily||0),ne=Number(currentUser.totalEarning||0)+p;
+    const na=currentUser.activeInvests.map(function(i){return i.id===id?{...i,totalClaimed:Number(i.totalClaimed||0)+p,daysCompleted:Number(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i;});
+    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+') - Day '+(Number(inv.daysCompleted||0)+1)+'/15',date:new Date().toISOString(),status:'approved'};
+    await db.collection('users').doc(currentUser.phone).update({
+      totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+    });
+    currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
+    distributeProfitBonus(p,currentUser.phone,currentUser.fullName,inv.planName);
     renderApp();
-    toast('✅ Claimed RS '+p+' Daily Petrol Income • Day '+(inv.daysCompleted+1)+'/15 • Referrer ko '+Math.floor(p*0.10)+' RS bonus gaya • Next claim 24h baad','ok');
-  }catch(e){toast(e.message,'err');}finally{isProcessing=false;}
-}
-
-async function claimPrincipal(id){
-  const inv=currentUser.activeInvests.find(i=>i.id===id);
-  if(!inv) return;
-  if((inv.daysCompleted||0)<15){toast('⏳ '+(inv.daysCompleted||0)+'/15 days, '+(15-(inv.daysCompleted||0))+' din baqi','err');return;}
-  if(inv.status==='completed'){toast('Already claimed','err');return;}
-  try{
-    const principal=inv.amount||0;
-    const nb=currentUser.balance+principal;
-    const na=currentUser.activeInvests.map(i=>i.id===id?{...i,status:'completed',principalClaimed:true}:i);
-    const tx={type:'principal_return',amount:principal,desc:'Principal Return '+inv.planName+' - 15 days - Frozen me, dobara invest kar sakty',date:new Date().toISOString(),status:'approved'};
-    await db.collection('users').doc(currentUser.phone).update({balance:nb,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)});
-    currentUser.balance=nb;currentUser.activeInvests=na;
-    toast('✅ Principal RS '+principal+' frozen me wapas • Dobara invest kar sakty','ok');
-    renderApp();
+    toast('✅ RS '+p+' Income me claim hua • Remaining Balance me add nahi hua','ok');
   }catch(e){toast(e.message,'err');}
+  finally{isProcessing=false;}
 }
 
+async function settleMaturedOffers(){
+  if(!currentUser||!db)return;
+  try{
+    const ref=db.collection('users').doc(currentUser.phone);
+    const now=Date.now();
+    let result=null;
+    await db.runTransaction(async function(transaction){
+      const snap=await transaction.get(ref);
+      if(!snap.exists)return;
+      const u=snap.data();
+      let balance=Number(u.balance||0),frozen=Number(u.frozenBalance||0),changed=false;
+      const txs=[];
+      const investments=(u.activeInvests||[]).map(function(inv){
+        const end=Number(inv.endDate||Number(inv.startDate||0)+(15*24*60*60*1000));
+        if(inv.status==='active'&&now>=end){
+          const principal=Number(inv.amount||0);
+          balance+=principal;frozen=Math.max(0,frozen-principal);changed=true;
+          txs.push({type:'principal_return',amount:principal,desc:'15 Day Offer Completed • Principal returned to Remaining Balance • '+inv.planName,date:new Date().toISOString(),status:'approved'});
+          return {...inv,status:'completed',principalClaimed:true,completedAt:new Date().toISOString()};
+        }
+        return inv;
+      });
+      if(!changed)return;
+      transaction.update(ref,{balance:balance,frozenBalance:frozen,activeInvests:investments,transactions:firebase.firestore.FieldValue.arrayUnion(...txs)});
+      result={balance:balance,frozen:frozen,investments:investments,txs:txs};
+    });
+    if(result){
+      currentUser.balance=result.balance;currentUser.frozenBalance=result.frozen;currentUser.activeInvests=result.investments;
+      currentUser.transactions=[...(currentUser.transactions||[]),...result.txs];
+    }
+  }catch(e){console.error('settleMaturedOffers',e);}
+}
+async function claimPrincipal(id){
+  await settleMaturedOffers();
+  renderApp();
+}
 
 function getClaimStatus(inv){
   const now=Date.now();
@@ -1261,10 +1290,6 @@ async function submitWithdraw(){
    toast('❌ Income Balance me sirf RS '+incomeBalance.toFixed(2)+' available hai','err');
    return;
  }
- if(amount>Number(currentUser.balance||0)){
-   toast('Insufficient balance','err');
-   return;
- }
  if(!acc||acc.length<8){toast('Account required','err');return;}
 
  // Do not use browser confirm(). The custom premium popup is used instead.
@@ -1306,9 +1331,6 @@ async function confirmWithdraw(){
      if(amount>latestIncome){
        throw new Error('Income Balance me sirf RS '+latestIncome.toFixed(2)+' available hai');
      }
-     if(amount>latestBalance){
-       throw new Error('Insufficient balance');
-     }
 
      const tx={
        type:'withdraw',
@@ -1338,7 +1360,7 @@ async function confirmWithdraw(){
      };
 
      transaction.update(userRef,{
-       balance:latestBalance-amount,
+       balance:latestBalance,
        totalEarning:latestIncome-amount,
        totalWithdraw:Number(latest.totalWithdraw||0)+amount,
        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
@@ -1349,7 +1371,7 @@ async function confirmWithdraw(){
    // Create the withdrawal request after the atomic user balance reservation.
    await db.collection('withdrawRequests').doc(withdrawId).set(withdrawalData);
 
-   currentUser.balance=Number(currentUser.balance||0)-amount;
+   currentUser.balance=Number(currentUser.balance||0);
    currentUser.totalEarning=Math.max(0,Number(currentUser.totalEarning||0)-amount);
    currentUser.totalWithdraw=Number(currentUser.totalWithdraw||0)+amount;
 
@@ -1378,7 +1400,6 @@ async function confirmWithdraw(){
    if(withdrawalData && userReserved){
      try{
        await db.collection('users').doc(currentUser.phone).update({
-         balance:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
          totalEarning:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
          totalWithdraw:firebase.firestore.FieldValue.increment(-(Number(withdrawalData.amount)||0)),
          transactions:firebase.firestore.FieldValue.arrayRemove({
@@ -1441,7 +1462,7 @@ async function loadCurrent(){
     console.error('loadCurrent error', e);
   }
 }
-function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;var fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){var oldTxs=currentUser.transactions||[];var newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;renderApp();updateBellBadge();renderWalletPending();}});}
+function startListener(){if(!currentUser||unsub)return;unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{if(!s.exists)return;var fb=s.data();if(JSON.stringify(fb)!==JSON.stringify(currentUser)){var oldTxs=currentUser.transactions||[];var newTxs=fb.transactions||[];checkForApprovedDeposit(oldTxs,newTxs);currentUser=fb;settleMaturedOffers().then(function(){renderApp();});updateBellBadge();renderWalletPending();}});}
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
 window.addEventListener('load',loadCurrent);
 </script>
