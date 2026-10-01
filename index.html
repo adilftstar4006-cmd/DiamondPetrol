@@ -6,7 +6,7 @@
   
 <link rel="icon" type="image/png" href="/logo.png">
   
-<title>Diamond Petrol - PSO Shell Official - Fixed Bottom Nav + KYC + Petrol Plans + Reviews</title>
+<title>PSO Shell Official</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -195,7 +195,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <div class="pro-modal-row"><span>Duration</span><b>15 days</b></div>
       
     </div>
-    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px;text-align:center;line-height:1.5">✅ PSO Shell Official • Secure • Instant activation • Daily 4% profit • After 15 days principal return</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px;text-align:center;line-height:1.5">✅ PSO Shell Official </div>
     <div class="pro-modal-actions">
       <button class="pro-modal-btn cancel" onclick="closeInvestModal()">✕ Cancel</button>
       <button class="pro-modal-btn confirm" id="modalConfirmBtn" onclick="confirmInvest()">✅ Confirm Invest</button>
@@ -277,19 +277,19 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
     <div id="loginForm" class="form active">
       <div class="field"><div class="field-row" id="row-loginPhone"><div class="icon">📱</div><input id="loginPhone" type="tel" placeholder="Phone" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-loginPhone"></div></div>
       <div class="field"><div class="field-row" id="row-loginPass"><div class="icon">🔒</div><input id="loginPass" type="password" placeholder="Password" autocomplete="current-password"><div class="eye" onclick="toggleEye('loginPass',this)">👁️</div></div><div class="field-error" id="err-loginPass"></div></div>
-      <div class="options"><label class="check"><input type="checkbox" id="remember" checked> Remember me</label><span class="forgot" onclick="toast('Admin: 03134823393','ok')">Forgot Password?</span></div>
+      <div class="options"><label class="check"><input type="checkbox" id="remember" checked> Remember me</label><span class="forgot" onclick="toast('Admin: telegram @adiimei','ok')">Forgot Password?</span></div>
       <button class="login-btn" id="loginBtn" onclick="doLogin()"><div class="spinner"></div><span class="btn-text" id="loginTxt">LOGIN SECURELY</span></button>
       <div class="tabs"><span class="tab active" onclick="switchTab('login')">LOGIN</span><span class="tab" onclick="switchTab('signup')">SIGNUP</span></div>
     </div>
     <div id="signupForm" class="form">
-      <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name - adil" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
+      <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
       <div class="field"><div class="field-row" id="row-signupPhone"><div class="icon">📱</div><input id="signupPhone" type="tel" placeholder="Phone" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-signupPhone"></div></div>
       <div class="field"><div class="field-row" id="row-signupPass"><div class="icon">🔒</div><input id="signupPass" type="password" placeholder="Password (min 6)" autocomplete="new-password"><div class="eye" onclick="toggleEye('signupPass',this)">👁️</div></div><div class="field-error" id="err-signupPass"></div></div>
       <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code" autocomplete="off" style="text-transform:uppercase"></div></div>
-      <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 500</span></button>
+      <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 100</span></button>
       <div class="tabs"><span class="tab" onclick="switchTab('login')">LOGIN</span><span class="tab active">SIGNUP</span></div>
     </div>
-    <div class="footer">Login Fixed • No White Glitch • Petrol PSO Shell Official • v22</div>
+    <div class="footer">• Petrol PSO Shell Official • v22</div>
   </div>
 </div>
 
@@ -316,13 +316,13 @@ const PLANS=[
 {id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'⛽',cls:'pso',logo:'⛽',size:28},
 {id:2,name:'Shell Basic',company:'SHELL',kw:'2.5K Ltr',price:5000,daily:200,total:3000,icon:'⛽',cls:'shell',logo:'🛢️',size:32},
 {id:3,name:'PSO Silver',company:'PSO',kw:'4K Ltr',price:7500,daily:300,total:4500,icon:'🛢️',cls:'pso',logo:'🛢️',size:34},
-{id:4,name:'Shell Gold',company:'SHELL',kw:'6K Ltr',price:10000,daily:400,total:6000,icon:'🏆',cls:'shell',popular:true,logo:'🏭',size:38},
-{id:5,name:'Total Premium',company:'TOTAL PARCO',kw:'8K Ltr',price:15000,daily:600,total:9000,icon:'🏭',cls:'total',logo:'🚛',size:40},
+{id:4,name:'Shell Gold',company:'SHELL',kw:'6K Ltr',price:10000,daily:400,total:6000,icon:'🏆',cls:'shell',popular:true,logo:'🏭',size:32},
+{id:5,name:'Total Premium',company:'TOTAL PARCO',kw:'8K Ltr',price:15000,daily:600,total:9000,icon:'🏭',cls:'total',logo:'🚛',size:42},
 {id:6,name:'PSO Pro',company:'PSO',kw:'12K Ltr',price:20000,daily:800,total:12000,icon:'🚛',cls:'pso',logo:'🏗️',size:42},
-{id:7,name:'Shell Elite',company:'SHELL',kw:'18K Ltr',price:30000,daily:1200,total:18000,icon:'🏗️',cls:'shell',logo:'⛽💎',size:44},
-{id:8,name:'PSO Ultra',company:'PSO OFFICIAL',kw:'24K Ltr',price:40000,daily:1600,total:24000,icon:'💎',cls:'pso',logo:'💎',size:46},
-{id:9,name:'Shell Max',company:'SHELL OFFICIAL',kw:'35K Ltr',price:55000,daily:2200,total:33000,icon:'💎',cls:'shell',logo:'💎💎',size:48},
-{id:10,name:'Diamond Infinity',company:'PSO x SHELL',kw:'50K Ltr',price:75000,daily:3000,total:45000,icon:'👑',cls:'total',logo:'👑',size:52},
+{id:7,name:'Shell Elite',company:'SHELL',kw:'18K Ltr',price:30000,daily:1200,total:18000,icon:'🏗️',cls:'shell',logo:'⛽',size:32},
+{id:8,name:'PSO Ultra',company:'PSO OFFICIAL',kw:'24K Ltr',price:40000,daily:1600,total:24000,icon:'💎',cls:'pso',logo:'💎',size:32},
+{id:9,name:'Shell Max',company:'SHELL OFFICIAL',kw:'35K Ltr',price:55000,daily:2200,total:33000,icon:'💎',cls:'shell',logo:'💎',size:32},
+{id:10,name:'Diamond Infinity',company:'PSO x SHELL',kw:'50K Ltr',price:75000,daily:3000,total:45000,icon:'👑',cls:'total',logo:'👑',size:32},
 ];
 
 function planLogo(p){
