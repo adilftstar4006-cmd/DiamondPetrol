@@ -934,6 +934,7 @@ function renderApp(){
     <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ After one withdrawal, the next withdrawal is available after <b style="color:#fff">12 hours</b>.</div><div>✅ Maximum withdrawal per request is <b style="color:#fff">50% of Income Balance</b>.</div><div>✅ Min 500 RS • Max 50% of Income Balance • KYC approved required.</div></div></div>
     <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;gap:10px;align-items:center"><div style="width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div style="flex:1"><div style="font-size:12px;font-weight:800">Next Withdrawal Cooldown</div><div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px">Har withdrawal ke baad 12 hours wait • Maximum 50% per request</div></div><b id="withdrawCooldownTimer" style="font-size:16px;color:#fbbf24;letter-spacing:1px">${getWithdrawCooldownRemaining()>0?formatWithdrawCooldown(getWithdrawCooldownRemaining()):'AVAILABLE'}</b></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${totalEarn.toFixed(2)}</b></div>
+    <div style="font-size:10px;color:rgba(255,255,255,.42);margin-bottom:12px">Withdrawal submit hone par sirf withdrawn amount Income se cut hota hai. Approval par Income dobara add nahi hoti; rejection par sirf wahi amount refund hota hai.</div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
     <input id="wdAmount" type="number" placeholder="Min 500 • Max 50% Income" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
@@ -1316,7 +1317,10 @@ function getWithdrawCooldownUntil(){
   const last=getLastWithdrawTimestamp();
   return last ? last+(12*60*60*1000) : 0;
 }
-function getWithdrawCooldownRemaining(){return Math.max(0,getWithdrawCooldownUntil()-Date.now());}
+function getWithdrawCooldownRemaining(){
+  const until=getWithdrawCooldownUntil();
+  return until>0?Math.max(0,until-Date.now()):0;
+}
 function formatWithdrawCooldown(ms){
   ms=Math.max(0,Number(ms||0));
   const hrs=Math.floor(ms/3600000),mins=Math.floor((ms%3600000)/60000),secs=Math.floor((ms%60000)/1000);
@@ -1390,9 +1394,15 @@ async function confirmWithdraw(){
        throw new Error('KYC not approved');
      }
      if(amount<500) throw new Error('Minimum withdraw is RS 500');
-     const latestWithdraws=(latest.transactions||[]).filter(function(t){return t.type==='withdraw'&&t.date;});
-     const lastWithdrawAt=latestWithdraws.length?Math.max.apply(null,latestWithdraws.map(function(t){return new Date(t.date).getTime()||0;})):0;
-     if(lastWithdrawAt && (Date.now()-lastWithdrawAt)<12*60*60*1000) throw new Error('Next withdrawal 12 hours after previous withdrawal is required');
+     const manualCooldown = latest.withdrawCooldownManual===true;
+     const serverCooldownUntil = Number(latest.withdrawCooldownUntil||0);
+     if(manualCooldown){
+       if(serverCooldownUntil>0 && Date.now()<serverCooldownUntil) throw new Error('Next withdrawal cooldown is still active');
+     }else{
+       const latestWithdraws=(latest.transactions||[]).filter(function(t){return t.type==='withdraw'&&t.date;});
+       const lastWithdrawAt=latestWithdraws.length?Math.max.apply(null,latestWithdraws.map(function(t){return new Date(t.date).getTime()||0;})):0;
+       if(lastWithdrawAt && (Date.now()-lastWithdrawAt)<12*60*60*1000) throw new Error('Next withdrawal 12 hours after previous withdrawal is required');
+     }
      const maxLatest=Math.floor(latestIncome/2);
      if(maxLatest<500) throw new Error('Income Balance must be at least RS 1,000 for a withdrawal');
      if(amount>maxLatest) throw new Error('Maximum withdrawal is 50% of Income Balance = RS '+maxLatest.toLocaleString());
@@ -1439,11 +1449,8 @@ async function confirmWithdraw(){
    // Create the withdrawal request after the atomic user balance reservation.
    await db.collection('withdrawRequests').doc(withdrawId).set(withdrawalData);
 
-   currentUser.balance=Number(currentUser.balance||0);
-   currentUser.totalEarning=Math.max(0,Number(currentUser.totalEarning||0)-amount);
-   currentUser.totalWithdraw=Number(currentUser.totalWithdraw||0)+amount;
-
-
+   // Firestore onSnapshot is the single source of truth for the exact
+   // post-withdraw Income Balance. Do not mutate it a second time locally.
    closeWithdrawModal();
    renderApp();
    switchPage('wallet');
@@ -1469,7 +1476,8 @@ async function confirmWithdraw(){
            account:acc,
            fee:0,
            receive:amount,
-           withdrawId:withdrawId
+           withdrawId:withdrawId,
+           incomeReserved:true
          })
        });
      }catch(rollbackErr){
