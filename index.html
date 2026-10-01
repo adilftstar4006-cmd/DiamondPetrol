@@ -190,7 +190,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <div class="pro-modal-row"><span>Daily Profit (4%)</span><b class="green" id="modalDaily">RS 120/day</b></div>
       <div class="pro-modal-row"><span>Total Return (15 days)</span><b id="modalTotal">RS 1,800</b></div>
       <div class="pro-modal-row"><span>Duration</span><b>15 days</b></div>
-      <div class="pro-modal-row"><span>Referral Bonus</span><b style="color:#22c55e">Referrer ko 2% Frozen = <span id="modalReferral">RS 300</span></b></div>
+      
     </div>
     <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px;text-align:center;line-height:1.5">✅ PSO Shell Official • Secure • Instant activation • Daily 4% profit • After 15 days principal return</div>
     <div class="pro-modal-actions">
@@ -282,7 +282,7 @@ body{font-family:'Inter',sans-serif;background:#0a0e1f;background:#0d1023;color:
       <div class="field"><div class="field-row" id="row-signupName"><div class="icon">👤</div><input id="signupName" type="text" placeholder="Full Name - adil" autocomplete="name"></div><div class="field-error" id="err-signupName"></div></div>
       <div class="field"><div class="field-row" id="row-signupPhone"><div class="icon">📱</div><input id="signupPhone" type="tel" placeholder="Phone" maxlength="11" autocomplete="off" inputmode="numeric"></div><div class="field-error" id="err-signupPhone"></div></div>
       <div class="field"><div class="field-row" id="row-signupPass"><div class="icon">🔒</div><input id="signupPass" type="password" placeholder="Password (min 6)" autocomplete="new-password"><div class="eye" onclick="toggleEye('signupPass',this)">👁️</div></div><div class="field-error" id="err-signupPass"></div></div>
-      <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code (Working - 10% Bonus)" autocomplete="off" style="text-transform:uppercase"></div></div>
+      <div class="field"><div class="field-row"><div class="icon">🎁</div><input id="signupRef" type="text" placeholder="Referral Code" autocomplete="off" style="text-transform:uppercase"></div></div>
       <button class="login-btn" id="signupBtn" onclick="doSignup()"><div class="spinner"></div><span class="btn-text" id="signupTxt">CREATE ACCOUNT + Rs 500</span></button>
       <div class="tabs"><span class="tab" onclick="switchTab('login')">LOGIN</span><span class="tab active">SIGNUP</span></div>
     </div>
@@ -355,6 +355,7 @@ function switchPage(t){
   document.getElementById('nav-'+t)?.classList.add('active');
   // Navigation must always repaint synchronously; background Firebase work must not block it.
   try{renderApp();}catch(e){console.error('renderApp navigation error',e);}
+  if(t==='team'){setTimeout(function(){loadReferralTeam();},0);}
   if(t==='wallet'){
     setTimeout(function(){try{renderWalletPending();}catch(e){}},150);
   }
@@ -372,7 +373,7 @@ function checkForApprovedDeposit(oldTxs,newTxs){
     var nt=newTxs[j];
     var key=nt.depositId||nt.withdrawId||nt.date+'_'+nt.amount;
     var old=oldMap[key]||oldMap[nt.date+'_'+nt.amount];
-    if(nt.type==='deposit'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Deposit Approved RS '+nt.amount+' • Balance updated!','ok'); setTimeout(function(){openNotif();},800);}
+    if(nt.type==='deposit'&&nt.status==='approved'){ if(!old||old.status==='pending'){toast('✅ Deposit Approved RS '+nt.amount+' • Balance updated!','ok'); setTimeout(function(){openNotif();},800);} processApprovedDepositReferralReward(nt); }
     if(nt.type==='deposit'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ YOUR ORDER REJECTED - RS '+nt.amount+' DEPOSIT REJECTED','err'); setTimeout(function(){openNotif();},500);}
     if(nt.type==='withdraw'&&nt.status==='approved'&&(!old||old.status==='pending')){toast('✅ Withdraw Approved RS '+nt.amount,'ok'); setTimeout(function(){openNotif();},800);}
     if(nt.type==='withdraw'&&nt.status==='rejected'&&(!old||old.status==='pending')){toast('❌ YOUR ORDER REJECTED - RS '+nt.amount+' WITHDRAW REJECTED - Refunded','err'); setTimeout(function(){openNotif();},500);}
@@ -523,7 +524,7 @@ async function doSignup(){
         transactions: firebase.firestore.FieldValue.arrayUnion({
           type:'referral_join',
           amount:0,
-          desc:`New referral joined: ${name} (${phone}) - No reward yet - Deposit pe 10% milega`,
+          desc:`New referral joined: ${name} (${phone}) - Reward after qualifying deposit RS 3,000+`,
           date:new Date().toISOString(),
           status:'approved',
           from:phone
@@ -532,101 +533,60 @@ async function doSignup(){
     }catch(e){console.log('ref update error',e);}
   }
   localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;
-  if(referredByPhone){toast('Created + Rs 100 • Referral linked to '+referredByPhone+' • Deposit pe bonus milega','ok');}
+  if(referredByPhone){toast('Created + Rs 100 • Referral linked to '+referredByPhone+' • Qualifying deposit RS 3,000+ par referrer ko RS 200 Income','ok');}
   else{toast('Created + Rs 100','ok');}
   setTimeout(()=>showApp(),800);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');}
 }
 
-// ===== REFERRAL REWARD SYSTEM - Working =====
-// Deposit pe 10% L1, 5% L2, 2% L3 bonus
+// ===== REFERRAL REWARD SYSTEM =====
+// Direct referral: qualifying first approved deposit of RS 3,000+ = RS 200 Income to referrer.
+// One reward per referred user. No percentage-based referral rewards.
 async function distributeDepositBonus(depositAmount, depositorPhone, depositorName){
+  const amount=Number(depositAmount||0);
+  if(amount<3000) return;
   try{
     const userSnap=await db.collection('users').doc(depositorPhone).get();
     if(!userSnap.exists) return;
     const userData=userSnap.data();
-    const chain = [];
-    if(userData.referredByPhone) chain.push(userData.referredByPhone);
-    if(userData.referredByChain && Array.isArray(userData.referredByChain)){
-      for(let p of userData.referredByChain){
-        if(!chain.includes(p) && p!==depositorPhone) chain.push(p);
-      }
-    }
-    // Limit 3 levels
-    const levels = chain.slice(0,3);
-    const rates = [0.02]; // NEW: L1 2% only - frozen me, income me nahi
-    for(let i=0;i<levels.length;i++){
-      const refPhone=levels[i];
-      const rate=rates[i];
-      if(!rate) continue;
-      const bonus=Math.floor(depositAmount*rate);
-      if(bonus<=0) continue;
-      const refSnap=await db.collection('users').doc(refPhone).get();
-      if(!refSnap.exists) continue;
-      const refData=refSnap.data();
-      await db.collection('users').doc(refPhone).update({
-        balance: (refData.balance||0)+bonus,
-        balance: (refData.balance||0)+bonus,
-        referralEarnings: (refData.referralEarnings||0)+bonus,
-        transactions: firebase.firestore.FieldValue.arrayUnion({
-          type:'referral_frozen',
-          amount:bonus,
-          desc:`Referral 2% Frozen: ${depositorName} (${depositorPhone}) deposited RS ${depositAmount} → You got 2% = RS ${bonus} in Frozen • Invest karo, withdraw nahi`,
-          date:new Date().toISOString(),
-          status:'approved',
-          from:depositorPhone,
-          level:i+1,
-          sourceAmount:depositAmount
-        })
+    const refPhone=userData.referredByPhone||'';
+    if(!refPhone || refPhone===depositorPhone) return;
+    const refRef=db.collection('users').doc(refPhone);
+    await db.runTransaction(async function(transaction){
+      const snap=await transaction.get(refRef);
+      if(!snap.exists) return;
+      const refData=snap.data();
+      const rewarded=Array.isArray(refData.referralRewardedPhones)?refData.referralRewardedPhones:[];
+      if(rewarded.includes(depositorPhone)) return;
+      const reward=200;
+      const tx={
+        type:'referral_reward',amount:reward,
+        desc:`Referral Reward: ${depositorName} (${depositorPhone}) made qualifying deposit RS ${amount.toLocaleString()} → RS 200 Income`,
+        date:new Date().toISOString(),status:'approved',from:depositorPhone,sourceAmount:amount
+      };
+      transaction.update(refRef,{
+        totalEarning:Number(refData.totalEarning||0)+reward,
+        referralEarnings:Number(refData.referralEarnings||0)+reward,
+        referralRewardedPhones:firebase.firestore.FieldValue.arrayUnion(depositorPhone),
+        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
       });
-      console.log(`Referral L${i+1} deposit bonus ${bonus} to ${refPhone}`);
-    }
-  }catch(e){console.log('deposit bonus error',e);}
+      if(currentUser && currentUser.phone===refPhone){
+        currentUser.totalEarning=Number(refData.totalEarning||0)+reward;
+        currentUser.referralEarnings=Number(refData.referralEarnings||0)+reward;
+        currentUser.referralRewardedPhones=[...rewarded,depositorPhone];
+        currentUser.transactions=[...(currentUser.transactions||[]),tx];
+      }
+    });
+  }catch(e){console.log('referral reward error',e);}
 }
 
-// Profit pe bhi referral bonus - Jitna jeety ga utna hisa milega
-// Daily collect pe 10% L1, 5% L2, 2% L3 of profit
-async function distributeProfitBonus(profitAmount, earnerPhone, earnerName, planName){
-  return; // NEW: Profit pe referral band - sirf deposit pe 2%
-  try{
-    const userSnap=await db.collection('users').doc(earnerPhone).get();
-    if(!userSnap.exists) return;
-    const userData=userSnap.data();
-    const chain = [];
-    if(userData.referredByPhone) chain.push(userData.referredByPhone);
-    if(userData.referredByChain && Array.isArray(userData.referredByChain)){
-      for(let p of userData.referredByChain){
-        if(!chain.includes(p) && p!==earnerPhone) chain.push(p);
-      }
-    }
-    const levels = chain.slice(0,3);
-    const rates = [0.10, 0.05, 0.02]; // L1 10% of profit, L2 5%, L3 2%
-    for(let i=0;i<levels.length;i++){
-      const refPhone=levels[i];
-      const rate=rates[i];
-      const bonus=Math.floor(profitAmount*rate);
-      if(bonus<=0) continue;
-      const refSnap=await db.collection('users').doc(refPhone).get();
-      if(!refSnap.exists) continue;
-      const refData=refSnap.data();
-      await db.collection('users').doc(refPhone).update({
-        balance: (refData.balance||0)+bonus,
-        balance: (refData.balance||0)+bonus,
-        referralEarnings: (refData.referralEarnings||0)+bonus,
-        transactions: firebase.firestore.FieldValue.arrayUnion({
-          type:'referral_frozen',
-          amount:bonus,
-          desc:`Referral L${i+1} Profit Bonus: ${earnerName} earned RS ${profitAmount} from ${planName} → You got ${rate*100}% = RS ${bonus} | Daily profit sharing`,
-          date:new Date().toISOString(),
-          status:'approved',
-          from:earnerPhone,
-          level:i+1,
-          sourceAmount:profitAmount
-        })
-      });
-    }
-  }catch(e){console.log('profit bonus error',e);}
+async function processApprovedDepositReferralReward(tx){
+  if(!tx || tx.type!=='deposit' || tx.status!=='approved') return;
+  await distributeDepositBonus(Number(tx.amount||0),currentUser?.phone,currentUser?.fullName||'Referral User');
 }
+
+// Profit-based referral rewards are disabled. Referral reward is only the fixed RS 200 qualifying-deposit reward.
+async function distributeProfitBonus(){ return; }
 
 async function doLogin(){
  if(isProcessing)return;clearErrors();
@@ -657,6 +617,31 @@ function showApp(){
  }
 }
 
+async function loadReferralTeam(){
+  const box=document.getElementById('teamMembersList');
+  if(!box||!currentUser)return;
+  const phones=Array.isArray(currentUser.referrals)?currentUser.referrals.slice():[];
+  if(!phones.length){box.innerHTML='<div style="text-align:center;padding:24px;color:rgba(255,255,255,.4);font-size:11px">Abhi koi referral nahi aya.</div>';return;}
+  try{
+    const docs=await Promise.all(phones.map(function(phone){return db.collection('users').doc(phone).get().catch(function(){return null;});}));
+    const rewarded=Array.isArray(currentUser.referralRewardedPhones)?currentUser.referralRewardedPhones:[];
+    const rows=docs.map(function(snap,idx){
+      const phone=phones[idx],u=snap&&snap.exists?snap.data():{};
+      const deposits=(u.transactions||[]).filter(function(t){return t.type==='deposit'&&t.status==='approved';});
+      const qualifying=deposits.some(function(t){return Number(t.amount||0)>=3000;});
+      const rewardPaid=rewarded.includes(phone);
+      const name=u.fullName||u.username||'Referral User';
+      const joined=u.createdAt?new Date(u.createdAt).toLocaleDateString():'-';
+      const totalDep=deposits.reduce(function(sum,t){return sum+Number(t.amount||0);},0);
+      return `<div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:8px">
+       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-weight:800;font-size:12px;color:#fff">${name}</div><div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">📞 ${phone} • Joined ${joined}</div></div><span style="padding:4px 8px;border-radius:999px;font-size:9px;font-weight:800;background:${rewardPaid?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};color:${rewardPaid?'#22c55e':'#f59e0b'}">${rewardPaid?'RS 200 PAID':'RS 200 PENDING'}</span></div>
+       <div style="display:flex;justify-content:space-between;margin-top:9px;font-size:10px;color:rgba(255,255,255,.5)"><span>Approved Deposits: <b style="color:#fff">RS ${totalDep.toLocaleString()}</b></span><span>${qualifying?'✅ Qualifying Deposit':'⏳ Deposit RS 3,000+'}</span></div>
+      </div>`;
+    }).join('');
+    box.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px">Total direct referrals: <b style="color:#f59e0b">${phones.length}</b></div>${rows}`;
+  }catch(e){box.innerHTML='<div style="text-align:center;padding:18px;color:#f87171;font-size:11px">Team load failed. Please refresh.</div>';}
+}
+
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
  const bal=currentUser.balance||0;const totalEarn=currentUser.totalEarning||0;const totalDep=currentUser.totalDeposit||0;const totalWd=currentUser.totalWithdraw||0;
@@ -678,7 +663,7 @@ function renderApp(){
     <div class="stat-card"><div class="num blue">${totalProfit.toFixed(2)}</div><div class="label">TOTAL PETROL PROFIT</div></div>
     <div class="stat-card"><div class="num white">${activeDays}</div><div class="label">ACTIVE DAYS</div></div>
    </div>
-   <div class="banner"><div class="left">& Earn 4% Daily ★</div><div class="right">🎁 Refer & Earn 10% - 5% - 2% 🎁</div></div>
+   <div class="banner"><div class="left">& Earn 4% Daily ★</div><div class="right">🎁 Refer & Earn RS 200 • Min Deposit RS 3,000 🎁</div></div>
    <div class="info-pill">ℹ️ Invest in a petrol plan to start earning 4% daily</div>
    <div class="plans-header"><h2>⛽ All Diamond Petrol Investment Plans</h2><span>15 days return</span></div>
    <div class="plans-grid">
@@ -898,18 +883,18 @@ function renderApp(){
    ${!canWithdraw?`<div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:700;color:#fca5a5;font-size:13px">🔒 KYC Required for Withdraw</div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Withdraw KYC ke bagair nahi hoga. Profile > KYC me CNIC, Full Legal Name submit karen. Admin 24h me approve karega. Jab tak KYC approved nahi, withdraw blocked hai.</div><button onclick="switchPage('profile')" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:#f59e0b;color:#000;border:none;font-weight:700;font-size:11px">Go to KYC • Submit CNIC</button></div>`:''}
    <div class="solar-card" style="${!canWithdraw?'opacity:.6;pointer-events:none':''}">
     <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds • KYC ${canWithdraw?'Approved ✅':'Required 🔒'}</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ Withdrawals are processed <b style="color:#fff">anytime</b> after KYC.</div><div>✅ Max processing time: <b style="color:#fff">2-3 hours</b> after approval.</div><div>✅ Full amount withdraw. Min 500 RS. KYC approved required.</div></div></div>
-    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Processing: 2-3 hours max • Any time withdraw • KYC: ${kycStatus.toUpperCase()}</div></div></div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ After one withdrawal, the next withdrawal is available after <b style="color:#fff">12 hours</b>.</div><div>✅ Maximum withdrawal per request is <b style="color:#fff">50% of Income Balance</b>.</div><div>✅ Min 500 RS • Max 50% of Income Balance • KYC approved required.</div></div></div>
+    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:10px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div><div style="font-size:12px;font-weight:700">⏰ Next withdrawal: 12h cooldown • Max 50% per request • KYC: ${kycStatus.toUpperCase()}</div></div></div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${totalEarn.toFixed(2)}</b></div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
-    <input id="wdAmount" type="number" placeholder="Min 500" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
+    <input id="wdAmount" type="number" placeholder="Min 500 • Max 50% Income" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <div style="font-size:12px;margin-bottom:6px">💳 Account Type</div>
     <select id="wdMethod" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
     <div style="font-size:12px;margin-bottom:6px">📞 Account Number / IBAN (Must match KYC CNIC name)</div>
     <input id="wdAccount" type="tel" placeholder="Enter account number" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <button onclick="submitWithdraw()" class="solar-btn-orange" ${!canWithdraw?'disabled style="opacity:.5;cursor:not-allowed"':''}>✈️ Submit Withdraw ${!canWithdraw?'• KYC Required':''}</button>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 500 RS • No fee • Full amount received • KYC approved required • Account must match CNIC name</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 500 RS • Max 50% of Income Balance • 12h between withdrawals • No fee • KYC approved required • Account must match CNIC name</div>
    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
@@ -935,63 +920,30 @@ function renderApp(){
  }else if(currentPage==='team'){
   c.innerHTML=`
    <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">👥 Diamond Petrol Referral Team</div>
-   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Share your referral link • Link se signup par referral code automatically attach hoga</div>
+   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Direct referral system • RS 200 Income on qualifying deposit</div>
    <div class="solar-card">
     <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px">🎁 Your Diamond Petrol Referral Link</div>
     <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:10px">Apna link share karein. Link se signup karne wale user ka referral code automatically attach ho jayega.</div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:#0d1023;border:1px dashed rgba(245,158,11,.3);margin-bottom:10px"><span style="font-size:18px;font-weight:800;letter-spacing:1px;color:#f59e0b">${currentUser.referralCode}</span><button onclick="navigator.clipboard.writeText('${currentUser.referralCode}');toast('Copied','ok')" style="width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,.15);border:none;color:#f59e0b;font-size:16px">⎘</button></div>
     <button onclick="navigator.clipboard.writeText('https://adiimei.online/?ref=${currentUser.referralCode}');toast('Link copied','ok')" style="width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">🔗 Share Your Referral Link</button>
     <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Total Referrals</span><b style="color:#f59e0b">${currentUser.referralsCount||0}</b></div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Earnings</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Income Earned</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
+    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);font-size:11px;color:rgba(255,255,255,.7)">🎁 Direct referral reward: <b style="color:#22c55e">RS 200 Income</b> when that referral makes a first approved deposit of <b style="color:#fff">RS 3,000+</b>.</div>
    </div>
 
-   <!-- YAHAN PER NECHE INFO - Kaise Kaam Karega - User ki demand -->
    <div class="solar-card" style="border:1px solid rgba(245,158,11,.25);background:linear-gradient(135deg,#1a1e3a,#1e2a1a);margin-top:12px">
-    <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#f59e0b;font-size:14px;margin-bottom:12px">📚 Yahan Neeche Info - Referral Kaise Kaam Karega?</div>
-    
-    <div style="display:grid;gap:10px">
-     
-     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #f59e0b;display:flex;gap:10px">
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center;font-weight:800;color:#f59e0b;font-size:13px;flex-shrink:0">1</div>
-      <div><div style="font-weight:700;color:#fff;font-size:12px">Apna Referral Code Share Karo</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">Apna referral link WhatsApp ya Facebook par share karo. Link se signup karne par code automatically fill ho jayega.</div></div>
-     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;color:#f59e0b;font-size:14px;margin-bottom:12px"><span>👥 My Direct Referral Team</span><span style="font-size:10px;color:#22c55e">RS 200 / qualifying referral</span></div>
+    <div id="teamMembersList"><div style="text-align:center;padding:18px;color:rgba(255,255,255,.4);font-size:11px">Loading your referral team...</div></div>
+   </div>
 
-     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #f87171;display:flex;gap:10px">
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(248,113,113,.15);display:grid;place-items:center;font-weight:800;color:#f87171;font-size:13px;flex-shrink:0">2</div>
-      <div><div style="font-weight:700;color:#fff;font-size:12px">Join Pe Koi Reward Nahi - Sirf Login Se Kuch Nahi</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5"><b style="color:#f87171">Sirf account banane se koi bonus nahi milega.</b> Referral join hoga, aapke Total Referrals +1 hoga lekin earnings 0 rahegi abhi.</div></div>
-     </div>
-
-     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #22c55e;display:flex;gap:10px">
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,.15);display:grid;place-items:center;font-weight:800;color:#22c55e;font-size:13px;flex-shrink:0">3</div>
-      <div><div style="font-weight:700;color:#fff;font-size:12px">Deposit Pe 10% Bonus - Jitna Ziada Deposit Utna Faida</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">
-       Jab referral deposit karega tab aapko turant bonus:<br>
-       • <b style="color:#fff">L1 (Direct): 10%</b> • <b>L2: 5%</b> • <b>L3: 2%</b><br>
-       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-        <span style="padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);font-size:10px;color:#fbbf24">RS 10,000 → RS 1,000</span>
-        <span style="padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);font-size:10px;color:#fbbf24">RS 30,000 → RS 3,000</span>
-        <span style="padding:4px 8px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);font-size:10px;color:#86efac">RS 75,000 → RS 7,500</span>
-       </div>
-      </div></div>
-     </div>
-
-     <div style="background:#0d1023;border-radius:12px;padding:12px;border-left:3px solid #60a5fa;display:flex;gap:10px">
-      <div style="width:28px;height:28px;border-radius:50%;background:rgba(96,165,250,.15);display:grid;place-items:center;font-weight:800;color:#60a5fa;font-size:13px;flex-shrink:0">4</div>
-      <div><div style="font-weight:700;color:#fff;font-size:12px">Rozana Profit Ka Hisa - Jitna Wo Jeety Ga Utna Aapko Bhi</div><div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:3px;line-height:1.5">
-       Referral jab daily collect karega:<br>
-       • <b style="color:#fff">L1: 10% of profit rozana</b> • L2: 5% • L3: 2%<br>
-       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-        <span style="padding:4px 8px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.15);font-size:10px;color:#bfdbfe">RS 400/day → Aapko RS 40/day</span>
-        <span style="padding:4px 8px;border-radius:999px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.15);font-size:10px;color:#bfdbfe">RS 3000/day → Aapko RS 300/day</span>
-       </div>
-       <div style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.45)">5 referrals × RS 40 = RS 200 roz bina kuch kiye!</div>
-      </div></div>
-     </div>
-
-     <div style="background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(34,197,94,.12));border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px;text-align:center">
-      <div style="font-weight:800;color:#fff;font-size:12px">🎯 Final - Kaise Kamaye? Passive Income!</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.6">Code Share Karo → Banda Join (No reward) → Wo Deposit Kare → <b style="color:#22c55e">Aapko 10% turant</b> → Wo Daily Profit Collect Kare → <b style="color:#f59e0b">Aapko 10% roz 15 din tak</b><br><span style="color:#fbbf24">Jitne ziada referrals + jitna ziada unka deposit = utna ziada aapka faida!</span></div>
-     </div>
-
+   <div class="solar-card" style="margin-top:12px">
+    <div style="font-weight:800;color:#f59e0b;font-size:13px;margin-bottom:10px">📚 Referral Rules</div>
+    <div style="display:grid;gap:8px;font-size:11px;color:rgba(255,255,255,.65);line-height:1.5">
+      <div>1️⃣ Banda aapke referral link se signup kare.</div>
+      <div>2️⃣ Uska <b style="color:#fff">approved deposit RS 3,000 ya us se zyada</b> ho.</div>
+      <div>3️⃣ Aapko <b style="color:#22c55e">RS 200 Income</b> milega.</div>
+      <div>4️⃣ Ye reward <b style="color:#fff">ek direct referral par sirf ek baar</b> milega.</div>
+      <div>5️⃣ Deposit ke percentage ya daily profit ka koi referral reward nahi hai.</div>
     </div>
    </div>
   `;
@@ -1053,7 +1005,6 @@ function showInvestModal(a,n,d){
   document.getElementById('modalAmount').textContent='RS '+a.toLocaleString();
   document.getElementById('modalDaily').textContent='RS '+d+'/day';
   document.getElementById('modalTotal').textContent='RS '+(d*15).toLocaleString()+' (15 days)';
-  document.getElementById('modalReferral').textContent='RS '+Math.floor(a*0.10).toLocaleString();
   document.getElementById('investModal').classList.add('show');
 }
 function closeInvestModal(){
@@ -1095,7 +1046,6 @@ async function confirmInvest(){
     currentUser.frozenBalance=after.frozen;
     currentUser.activeInvests=[...(currentUser.activeInvests||[]),after.inv];
     currentUser.transactions=[...(currentUser.transactions||[]),after.tx];
-    distributeDepositBonus(a,currentUser.phone,currentUser.fullName);
     renderApp();
     toast('✅ Offer activated • RS '+a.toLocaleString()+' Freeze ho gaya • 15 days','ok');
   }catch(e){toast(e.message,'err');}
@@ -1298,6 +1248,17 @@ function closeWithdrawModal(){
   pendingWithdraw={amount:0,method:'',account:'',receive:0};
 }
 
+function getLastWithdrawTimestamp(){
+  const tx=(currentUser&&currentUser.transactions||[]).filter(function(t){return t.type==='withdraw'&&t.date;});
+  if(!tx.length)return 0;
+  return Math.max.apply(null,tx.map(function(t){return new Date(t.date).getTime()||0;}));
+}
+function getWithdrawCooldownRemaining(){
+  const last=getLastWithdrawTimestamp();
+  if(!last)return 0;
+  return Math.max(0,(12*60*60*1000)-(Date.now()-last));
+}
+
 async function submitWithdraw(){
  var amount=Number(document.getElementById('wdAmount')?.value||0);
  var method=document.getElementById('wdMethod')?.value;
@@ -1306,9 +1267,16 @@ async function submitWithdraw(){
  if((currentUser.kycStatus||'not_submitted')!=='approved'){toast('KYC not approved','err');switchPage('profile');return;}
  if(!amount||amount<500){toast('Min 500','err');return;}
 
+ const cooldown=getWithdrawCooldownRemaining();
+ if(cooldown>0){
+   const hrs=Math.floor(cooldown/3600000),mins=Math.floor((cooldown%3600000)/60000);
+   toast('⏳ Next withdrawal '+hrs+'h '+mins+'m baad available hoga','err');return;
+ }
  var incomeBalance=Number(currentUser.totalEarning||0);
- if(amount>incomeBalance){
-   toast('❌ Income Balance me sirf RS '+incomeBalance.toFixed(2)+' available hai','err');
+ const maxWithdraw=Math.floor(incomeBalance/2);
+ if(maxWithdraw<500){toast('Income Balance RS '+incomeBalance.toFixed(2)+' hai. Withdrawal ke liye kam az kam RS 1,000 Income chahiye.','err');return;}
+ if(amount>maxWithdraw){
+   toast('❌ Ek withdrawal me maximum 50% = RS '+maxWithdraw.toLocaleString()+' allowed hai','err');
    return;
  }
  if(!acc||acc.length<8){toast('Account required','err');return;}
@@ -1349,9 +1317,12 @@ async function confirmWithdraw(){
        throw new Error('KYC not approved');
      }
      if(amount<500) throw new Error('Minimum withdraw is RS 500');
-     if(amount>latestIncome){
-       throw new Error('Income Balance me sirf RS '+latestIncome.toFixed(2)+' available hai');
-     }
+     const latestWithdraws=(latest.transactions||[]).filter(function(t){return t.type==='withdraw'&&t.date;});
+     const lastWithdrawAt=latestWithdraws.length?Math.max.apply(null,latestWithdraws.map(function(t){return new Date(t.date).getTime()||0;})):0;
+     if(lastWithdrawAt && (Date.now()-lastWithdrawAt)<12*60*60*1000) throw new Error('Next withdrawal 12 hours after previous withdrawal is required');
+     const maxLatest=Math.floor(latestIncome/2);
+     if(maxLatest<500) throw new Error('Income Balance must be at least RS 1,000 for a withdrawal');
+     if(amount>maxLatest) throw new Error('Maximum withdrawal is 50% of Income Balance = RS '+maxLatest.toLocaleString());
 
      const tx={
        type:'withdraw',
@@ -1495,6 +1466,7 @@ function startListener(){
      currentUser=fb;
      // Show Firestore updates immediately. Settlement is secondary background work.
      renderApp();
+     if(currentPage==='team'){setTimeout(function(){loadReferralTeam();},0);}
      updateBellBadge();
      renderWalletPending();
      if(!settleInFlight){
