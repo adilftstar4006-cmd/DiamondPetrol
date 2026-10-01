@@ -307,7 +307,11 @@ async function setWithdrawCooldown(phone,hours){
  isAdminProcessing=true;
  try{
    var until=hours>0?Date.now()+Number(hours)*60*60*1000:0;
-   await db.collection('users').doc(phone).update({withdrawCooldownUntil:until,withdrawCooldownManual:true});
+   await db.collection('users').doc(phone).update({
+      withdrawCooldownUntil:until,
+      withdrawCooldownManual:true,
+      withdrawCooldownClearedAt: hours>0 ? firebase.firestore.FieldValue.delete() : new Date().toISOString()
+    });
    showToast(hours>0?'✅ Cooldown set to '+hours+'h':'✅ Cooldown cleared','ok');
  }catch(e){showToast('❌ '+e.message,'err');}
  isAdminProcessing=false;
@@ -635,6 +639,7 @@ async function approveOldWithdraw(phone, idx, amount){
     var txs=(userDoc.data().transactions||[]).slice();
     txs[idx].status='approved';
     await db.collection('users').doc(phone).update({transactions:txs});
+    // Approval does not add the withdrawn amount back to Income.
     showToast('✅ OLD Withdraw Approved','ok');
     isAdminProcessing=false;
   }catch(e){showToast('❌ '+e.message,'err');isAdminProcessing=false;}
