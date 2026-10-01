@@ -533,15 +533,15 @@ async function doSignup(){
     }catch(e){console.log('ref update error',e);}
   }
   localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;
-  if(referredByPhone){toast('Created + Rs 100 • Referral linked to '+referredByPhone+' • Qualifying deposit RS 3,000+ par referrer ko RS 200 Income','ok');}
+  if(referredByPhone){toast('Created • Referral linked • 3 qualifying referrals complete honay par RS 1,500 Income unlock hoga','ok');}
   else{toast('Created + Rs 100','ok');}
   setTimeout(()=>showApp(),800);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');}
 }
 
 // ===== REFERRAL REWARD SYSTEM =====
-// Direct referral: qualifying first approved deposit of RS 3,000+ = RS 200 Income to referrer.
-// One reward per referred user. No percentage-based referral rewards.
+// Group referral system: every 3 direct referrals who each make an approved deposit of RS 3,000+ unlock RS 1,500 Income.
+// No percentage-based referral rewards and no per-referral automatic payout.
 async function distributeDepositBonus(depositAmount, depositorPhone, depositorName){
   const amount=Number(depositAmount||0);
   if(amount<3000) return;
@@ -556,28 +556,19 @@ async function distributeDepositBonus(depositAmount, depositorPhone, depositorNa
       const snap=await transaction.get(refRef);
       if(!snap.exists) return;
       const refData=snap.data();
-      const rewarded=Array.isArray(refData.referralRewardedPhones)?refData.referralRewardedPhones:[];
-      if(rewarded.includes(depositorPhone)) return;
-      const reward=200;
-      const tx={
-        type:'referral_reward',amount:reward,
-        desc:`Referral Reward: ${depositorName} (${depositorPhone}) made qualifying deposit RS ${amount.toLocaleString()} → RS 200 Income`,
-        date:new Date().toISOString(),status:'approved',from:depositorPhone,sourceAmount:amount
-      };
+      const qualified=Array.isArray(refData.referralQualifiedPhones)?refData.referralQualifiedPhones:[];
+      const claimed=Array.isArray(refData.referralClaimedPhones)?refData.referralClaimedPhones:[];
+      if(qualified.includes(depositorPhone)) return;
       transaction.update(refRef,{
-        totalEarning:Number(refData.totalEarning||0)+reward,
-        referralEarnings:Number(refData.referralEarnings||0)+reward,
-        referralRewardedPhones:firebase.firestore.FieldValue.arrayUnion(depositorPhone),
-        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+        referralQualifiedPhones:firebase.firestore.FieldValue.arrayUnion(depositorPhone),
+        referralQualifiedCount:qualified.length+1
       });
       if(currentUser && currentUser.phone===refPhone){
-        currentUser.totalEarning=Number(refData.totalEarning||0)+reward;
-        currentUser.referralEarnings=Number(refData.referralEarnings||0)+reward;
-        currentUser.referralRewardedPhones=[...rewarded,depositorPhone];
-        currentUser.transactions=[...(currentUser.transactions||[]),tx];
+        currentUser.referralQualifiedPhones=[...qualified,depositorPhone];
+        currentUser.referralQualifiedCount=qualified.length+1;
       }
     });
-  }catch(e){console.log('referral reward error',e);}
+  }catch(e){console.log('referral qualification error',e);}
 }
 
 async function processApprovedDepositReferralReward(tx){
@@ -585,8 +576,54 @@ async function processApprovedDepositReferralReward(tx){
   await distributeDepositBonus(Number(tx.amount||0),currentUser?.phone,currentUser?.fullName||'Referral User');
 }
 
-// Profit-based referral rewards are disabled. Referral reward is only the fixed RS 200 qualifying-deposit reward.
+// Legacy function kept for compatibility. Referral income is now paid only in RS 1,500 groups of 3.
 async function distributeProfitBonus(){ return; }
+
+async function claimReferralGroup(){
+  if(isProcessing || !currentUser) return;
+  isProcessing=true;
+  try{
+    const userRef=db.collection('users').doc(currentUser.phone);
+    let claimData=null;
+    await db.runTransaction(async function(transaction){
+      const snap=await transaction.get(userRef);
+      if(!snap.exists) throw new Error('User account not found');
+      const latest=snap.data();
+      const qualified=Array.isArray(latest.referralQualifiedPhones)?latest.referralQualifiedPhones:[];
+      const claimed=Array.isArray(latest.referralClaimedPhones)?latest.referralClaimedPhones:[];
+      const available=qualified.filter(function(phone){return !claimed.includes(phone);});
+      if(available.length<3) throw new Error('3 confirmed referrals are required');
+      const batch=available.slice(0,3);
+      const nowIso=new Date().toISOString();
+      const reward=1500;
+      const tx={
+        type:'referral_reward',amount:reward,
+        desc:'Referral Group Reward: 3 confirmed referrals completed → RS 1,500 Income',
+        date:nowIso,status:'approved',referralPhones:batch
+      };
+      transaction.update(userRef,{
+        totalEarning:Number(latest.totalEarning||0)+reward,
+        referralEarnings:Number(latest.referralEarnings||0)+reward,
+        referralClaimedPhones:firebase.firestore.FieldValue.arrayUnion(...batch),
+        referralClaimedGroups:firebase.firestore.FieldValue.increment(1),
+        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+      });
+      claimData={
+        totalEarning:Number(latest.totalEarning||0)+reward,
+        referralEarnings:Number(latest.referralEarnings||0)+reward,
+        referralClaimedPhones:[...claimed,...batch],
+        referralClaimedGroups:Number(latest.referralClaimedGroups||0)+1,
+        transactions:[...(latest.transactions||[]),tx]
+      };
+    });
+    if(claimData){
+      Object.assign(currentUser,claimData);
+      toast('🎉 RS 1,500 Referral Group Reward Income mein add ho gaya!','ok');
+      renderApp();
+    }
+  }catch(e){toast(e.message||'Referral reward claim failed','err');}
+  finally{isProcessing=false;}
+}
 
 async function doLogin(){
  if(isProcessing)return;clearErrors();
@@ -621,24 +658,35 @@ async function loadReferralTeam(){
   const box=document.getElementById('teamMembersList');
   if(!box||!currentUser)return;
   const phones=Array.isArray(currentUser.referrals)?currentUser.referrals.slice():[];
-  if(!phones.length){box.innerHTML='<div style="text-align:center;padding:24px;color:rgba(255,255,255,.4);font-size:11px">Abhi koi referral nahi aya.</div>';return;}
+  const qualified=Array.isArray(currentUser.referralQualifiedPhones)?currentUser.referralQualifiedPhones:[];
+  const claimed=Array.isArray(currentUser.referralClaimedPhones)?currentUser.referralClaimedPhones:[];
+  const available=qualified.filter(function(phone){return !claimed.includes(phone);});
+  const progress=Math.min(available.length,3);
+  const canClaim=available.length>=3;
+  if(!phones.length){
+    box.innerHTML='<div style="text-align:center;padding:24px;color:rgba(255,255,255,.4);font-size:11px">Abhi koi referral nahi aya.</div>';
+    return;
+  }
   try{
     const docs=await Promise.all(phones.map(function(phone){return db.collection('users').doc(phone).get().catch(function(){return null;});}));
-    const rewarded=Array.isArray(currentUser.referralRewardedPhones)?currentUser.referralRewardedPhones:[];
     const rows=docs.map(function(snap,idx){
-      const phone=phones[idx],u=snap&&snap.exists?snap.data():{};
-      const deposits=(u.transactions||[]).filter(function(t){return t.type==='deposit'&&t.status==='approved';});
-      const qualifying=deposits.some(function(t){return Number(t.amount||0)>=3000;});
-      const rewardPaid=rewarded.includes(phone);
+      const u=snap&&snap.exists?snap.data():{};
       const name=u.fullName||u.username||'Referral User';
-      const joined=u.createdAt?new Date(u.createdAt).toLocaleDateString():'-';
-      const totalDep=deposits.reduce(function(sum,t){return sum+Number(t.amount||0);},0);
-      return `<div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:8px">
-       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-weight:800;font-size:12px;color:#fff">${name}</div><div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">📞 ${phone} • Joined ${joined}</div></div><span style="padding:4px 8px;border-radius:999px;font-size:9px;font-weight:800;background:${rewardPaid?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};color:${rewardPaid?'#22c55e':'#f59e0b'}">${rewardPaid?'RS 200 PAID':'RS 200 PENDING'}</span></div>
-       <div style="display:flex;justify-content:space-between;margin-top:9px;font-size:10px;color:rgba(255,255,255,.5)"><span>Approved Deposits: <b style="color:#fff">RS ${totalDep.toLocaleString()}</b></span><span>${qualifying?'✅ Qualifying Deposit':'⏳ Deposit RS 3,000+'}</span></div>
+      const isConfirmed=qualified.includes(phones[idx]);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:7px">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:grid;place-items:center;color:#111;font-weight:900;font-size:12px;flex:none">${String(name).charAt(0).toUpperCase()}</div><div style="font-weight:800;font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div></div>
+        <span style="font-size:9px;font-weight:800;padding:4px 8px;border-radius:999px;background:${isConfirmed?'rgba(34,197,94,.12)':'rgba(245,158,11,.10)'};color:${isConfirmed?'#22c55e':'#f59e0b'};flex:none">${isConfirmed?'CONFIRMED':'PENDING'}</span>
       </div>`;
     }).join('');
-    box.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px">Total direct referrals: <b style="color:#f59e0b">${phones.length}</b></div>${rows}`;
+    box.innerHTML=`
+      <div style="padding:14px;border-radius:16px;background:linear-gradient(135deg,rgba(245,158,11,.10),rgba(34,197,94,.06));border:1px solid rgba(245,158,11,.18);margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:11px;color:rgba(255,255,255,.55);font-weight:700">NEXT REWARD</span><b style="font-size:18px;color:#22c55e">RS 1,500</b></div>
+        <div style="display:flex;gap:6px;align-items:center">${[0,1,2].map(function(i){return `<div style="height:7px;flex:1;border-radius:99px;background:${i<progress?'#22c55e':'rgba(255,255,255,.10)'};box-shadow:${i<progress?'0 0 10px rgba(34,197,94,.35)':'none'}"></div>`;}).join('')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px"><span style="font-size:11px;color:rgba(255,255,255,.55)">${progress}/3 confirmed referrals</span><span style="font-size:10px;color:rgba(255,255,255,.42)">Har referral ka approved deposit ≥ RS 3,000</span></div>
+        ${canClaim?'<button onclick="claimReferralGroup()" style="width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:linear-gradient(90deg,#22c55e,#16a34a);color:#06100a;font-weight:900;font-size:12px;box-shadow:0 8px 24px rgba(34,197,94,.22);cursor:pointer">🎁 CLAIM RS 1,500</button>':'<div style="margin-top:10px;text-align:center;font-size:10px;color:rgba(255,255,255,.42)">3 confirmed referrals complete honay par claim unlock hoga</div>'}
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:8px">My referrals • <b style="color:#fff">${phones.length}</b></div>
+      ${rows}`;
   }catch(e){box.innerHTML='<div style="text-align:center;padding:18px;color:#f87171;font-size:11px">Team load failed. Please refresh.</div>';}
 }
 
@@ -663,7 +711,7 @@ function renderApp(){
     <div class="stat-card"><div class="num blue">${totalProfit.toFixed(2)}</div><div class="label">TOTAL PETROL PROFIT</div></div>
     <div class="stat-card"><div class="num white">${activeDays}</div><div class="label">ACTIVE DAYS</div></div>
    </div>
-   <div class="banner"><div class="left">& Earn 4% Daily ★</div><div class="right">🎁 Refer & Earn RS 200 • Min Deposit RS 3,000 🎁</div></div>
+   <div class="banner"><div class="left">& Earn 4% Daily ★</div><div class="right">🎁 3 Confirmed Referrals = RS 1,500 Income 🎁</div></div>
    <div class="info-pill">ℹ️ Invest in a petrol plan to start earning 4% daily</div>
    <div class="plans-header"><h2>⛽ All Diamond Petrol Investment Plans</h2><span>15 days return</span></div>
    <div class="plans-grid">
@@ -920,19 +968,19 @@ function renderApp(){
  }else if(currentPage==='team'){
   c.innerHTML=`
    <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">👥 Diamond Petrol Referral Team</div>
-   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Direct referral system • RS 200 Income on qualifying deposit</div>
+   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Group referral system • 3 confirmed referrals = RS 1,500 Income</div>
    <div class="solar-card">
     <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px">🎁 Your Diamond Petrol Referral Link</div>
     <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:10px">Apna link share karein. Link se signup karne wale user ka referral code automatically attach ho jayega.</div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:#0d1023;border:1px dashed rgba(245,158,11,.3);margin-bottom:10px"><span style="font-size:18px;font-weight:800;letter-spacing:1px;color:#f59e0b">${currentUser.referralCode}</span><button onclick="navigator.clipboard.writeText('${currentUser.referralCode}');toast('Copied','ok')" style="width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,.15);border:none;color:#f59e0b;font-size:16px">⎘</button></div>
     <button onclick="navigator.clipboard.writeText('https://adiimei.online/?ref=${currentUser.referralCode}');toast('Link copied','ok')" style="width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">🔗 Share Your Referral Link</button>
     <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Total Referrals</span><b style="color:#f59e0b">${currentUser.referralsCount||0}</b></div>
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Income Earned</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
-    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);font-size:11px;color:rgba(255,255,255,.7)">🎁 Direct referral reward: <b style="color:#22c55e">RS 200 Income</b> when that referral makes a first approved deposit of <b style="color:#fff">RS 3,000+</b>.</div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Group Income Earned</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
+    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);font-size:11px;color:rgba(255,255,255,.7)">🎁 Har <b style="color:#fff">3 direct referrals</b> jab approved deposit <b style="color:#fff">RS 3,000+</b> complete karein, aap <b style="color:#22c55e">RS 1,500 Income</b> claim kar sakte hain.</div>
    </div>
 
    <div class="solar-card" style="border:1px solid rgba(245,158,11,.25);background:linear-gradient(135deg,#1a1e3a,#1e2a1a);margin-top:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;color:#f59e0b;font-size:14px;margin-bottom:12px"><span>👥 My Direct Referral Team</span><span style="font-size:10px;color:#22c55e">RS 200 / qualifying referral</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;color:#f59e0b;font-size:14px;margin-bottom:12px"><span>👥 My Direct Referral Team</span><span style="font-size:10px;color:#22c55e">3 Confirmed = RS 1,500</span></div>
     <div id="teamMembersList"><div style="text-align:center;padding:18px;color:rgba(255,255,255,.4);font-size:11px">Loading your referral team...</div></div>
    </div>
 
@@ -941,9 +989,9 @@ function renderApp(){
     <div style="display:grid;gap:8px;font-size:11px;color:rgba(255,255,255,.65);line-height:1.5">
       <div>1️⃣ Banda aapke referral link se signup kare.</div>
       <div>2️⃣ Uska <b style="color:#fff">approved deposit RS 3,000 ya us se zyada</b> ho.</div>
-      <div>3️⃣ Aapko <b style="color:#22c55e">RS 200 Income</b> milega.</div>
-      <div>4️⃣ Ye reward <b style="color:#fff">ek direct referral par sirf ek baar</b> milega.</div>
-      <div>5️⃣ Deposit ke percentage ya daily profit ka koi referral reward nahi hai.</div>
+      <div>3️⃣ Aisay <b style="color:#fff">3 referrals</b> complete hon to counter 3/3 ho jayega.</div>
+      <div>4️⃣ <b style="color:#22c55e">3/3 complete</b> honay par <b style="color:#22c55e">RS 1,500 Income</b> claim karein.</div>
+      <div>5️⃣ Claim ke baad aglay 3 referrals ka counter dobara start hoga.</div>
     </div>
    </div>
   `;
