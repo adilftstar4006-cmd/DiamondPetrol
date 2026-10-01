@@ -1305,7 +1305,13 @@ function getLastWithdrawTimestamp(){
   return Math.max.apply(null,tx.map(function(t){return new Date(t.date).getTime()||0;}));
 }
 function getWithdrawCooldownUntil(){
-  const stored=Number(currentUser&&currentUser.withdrawCooldownUntil||0);
+  if(!currentUser)return 0;
+  // Admin can explicitly clear/override the cooldown. If this flag exists,
+  // never rebuild a cooldown from old transaction history.
+  if(currentUser.withdrawCooldownManual===true){
+    return Number(currentUser.withdrawCooldownUntil||0);
+  }
+  const stored=Number(currentUser.withdrawCooldownUntil||0);
   if(stored>0)return stored;
   const last=getLastWithdrawTimestamp();
   return last ? last+(12*60*60*1000) : 0;
@@ -1401,7 +1407,8 @@ async function confirmWithdraw(){
        account:acc,
        fee:0,
        receive:amount,
-       withdrawId:withdrawId
+       withdrawId:withdrawId,
+       incomeReserved:true
      };
 
      withdrawalData={
@@ -1423,6 +1430,7 @@ async function confirmWithdraw(){
        totalEarning:latestIncome-amount,
        totalWithdraw:Number(latest.totalWithdraw||0)+amount,
        withdrawCooldownUntil:Date.now()+(12*60*60*1000),
+       withdrawCooldownManual:false,
        transactions:firebase.firestore.FieldValue.arrayUnion(tx)
      });
    });
@@ -1450,6 +1458,7 @@ async function confirmWithdraw(){
          totalEarning:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
          totalWithdraw:firebase.firestore.FieldValue.increment(-(Number(withdrawalData.amount)||0)),
          withdrawCooldownUntil:0,
+         withdrawCooldownManual:true,
          transactions:firebase.firestore.FieldValue.arrayRemove({
            type:'withdraw',
            amount:withdrawalData.amount,
