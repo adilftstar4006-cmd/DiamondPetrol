@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1023">
+<meta name="description" content="Diamond Petrol member dashboard">
+<script>if('scrollRestoration' in history)history.scrollRestoration='manual';</script>
   
 <link rel="icon" type="image/png" href="/logo.png">
   
-<title>Diamond Petrol</title>
+<title>Diamond Petrol | Member Dashboard</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -443,7 +446,58 @@ transform:translateX(-70%) rotate(8deg);animation:uiShine 4.8s ease-in-out infin
 </style>
 <style>
 .lux-plan-price-v9{font-size:12px;color:rgba(255,255,255,.62);margin-top:4px;font-weight:700}.lux-plan-price-v9 b{color:#fbbf24;font-size:14px;margin-left:3px}.lux-plan-icon-v9 .plan-logo-svg{width:108px!important;height:108px!important;object-fit:contain;display:block;filter:drop-shadow(0 0 13px rgba(255,190,55,.28));background:transparent!important}.lux-plan-icon-v9{background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important}@media(max-width:520px){.lux-plan-price-v9{font-size:11px}.lux-plan-price-v9 b{font-size:13px}.lux-plan-icon-v9 .plan-logo-svg{width:92px!important;height:92px!important}}
-</style></head>
+</style><style>
+/* Plan cards: keep the reference artwork fully inside the card */
+.lux-plan-card-v9{
+  min-height:118px!important;
+  padding:9px 12px!important;
+  gap:10px!important;
+  overflow:hidden!important;
+  align-items:center!important;
+}
+.lux-plan-icon-v9{
+  width:94px!important;
+  min-width:94px!important;
+  height:100px!important;
+  flex:0 0 94px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  position:relative!important;
+  z-index:2!important;
+}
+.lux-plan-icon-v9 .plan-logo-svg{
+  width:100px!important;
+  height:94px!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  display:block!important;
+  background:transparent!important;
+  filter:drop-shadow(0 7px 13px rgba(0,0,0,.35))!important;
+  transform:none!important;
+}
+.lux-plan-main-v9{min-width:0;flex:1 1 auto;overflow:hidden}
+.lux-plan-name-row-v9 h3{font-size:16px!important}
+.lux-plan-price-v9{font-size:11px!important;margin-top:4px!important;white-space:nowrap}
+.lux-plan-price-v9 b{font-size:14px!important}
+.lux-plan-meta-v9{margin-top:5px!important;font-size:10px!important;white-space:nowrap}
+.lux-plan-return-v9{margin-top:5px!important;font-size:10px!important;white-space:nowrap}
+.lux-plan-arrow-v9{flex:0 0 42px!important}
+@media(max-width:520px){
+ .lux-plan-card-v9{min-height:112px!important;padding:7px 8px!important;gap:8px!important}
+ .lux-plan-icon-v9{width:82px!important;min-width:82px!important;height:94px!important;flex-basis:82px!important}
+ .lux-plan-icon-v9 .plan-logo-svg{width:88px!important;height:84px!important}
+ .lux-plan-name-row-v9 h3{font-size:15px!important}
+ .lux-plan-price-v9 b{font-size:13px!important}
+ .lux-plan-arrow-v9{width:38px!important;height:38px!important;flex-basis:38px!important}
+}
+</style>
+</head>
 <body>
 
 <div class="pro-modal-overlay" id="investModal">
@@ -600,25 +654,28 @@ transform:translateX(-70%) rotate(8deg);animation:uiShine 4.8s ease-in-out infin
   box-shadow:0 0 24px rgba(245,158,11,.12);
 }
 .reference-center-nav{
-  width:72px!important;
-  min-width:72px!important;
-  height:72px!important;
-  margin-top:-24px;
+  flex:0 0 58px!important;
+  width:58px!important;
+  min-width:58px!important;
+  height:58px!important;
+  padding:0!important;
+  margin-top:-16px;
   border-radius:50%!important;
-  background:radial-gradient(circle at 35% 25%,#ffe27a 0%,#fbbf24 36%,#e49b08 72%,#9b5f00 100%)!important;
+  background:radial-gradient(circle at 35% 25%,#ffe27a 0%,#fbbf24 38%,#e49b08 76%,#9b5f00 100%)!important;
   border:2px solid rgba(255,239,170,.9)!important;
-  box-shadow:0 0 0 6px rgba(245,158,11,.08),0 12px 34px rgba(245,158,11,.28),inset 0 2px 0 rgba(255,255,255,.65)!important;
+  box-shadow:0 0 0 4px rgba(245,158,11,.07),0 8px 22px rgba(245,158,11,.22),inset 0 2px 0 rgba(255,255,255,.6)!important;
   color:#10131d!important;
   display:flex!important;
   align-items:center;
   justify-content:center;
 }
 .reference-center-nav .ico{
-  width:48px!important;height:48px!important;
-  border-radius:15px!important;
-  background:rgba(0,0,0,.10)!important;
+  width:36px!important;
+  height:36px!important;
+  border-radius:11px!important;
+  background:rgba(0,0,0,.09)!important;
 }
-.reference-center-nav .ico svg{width:28px!important;height:28px!important}
+.reference-center-nav .ico svg{width:22px!important;height:22px!important}
 .reference-center-nav span{display:none}
 
 .lux-home-v9{padding:10px 0 26px}
@@ -832,16 +889,30 @@ transform:translateX(-70%) rotate(8deg);animation:uiShine 4.8s ease-in-out infin
   <div class="bottom-nav premium-bottom-nav reference-bottom-nav">
     <button class="active" onclick="switchPage('home')" id="nav-home"><div class="ico"><svg viewBox="0 0 24 24"><path d="m3.5 10.8 8.5-7 8.5 7v9.2a1 1 0 0 1-1 1h-5v-5.5h-5V21h-5a1 1 0 0 1-1-1v-9.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div><span>Home</span></button>
     <button onclick="switchPage('plan')" id="nav-plan"><div class="ico"><svg viewBox="0 0 24 24"><path d="m12 3 7 4-7 4-7-4 7-4Zm-7 9 7 4 7-4M5 17l7 4 7-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div><span>Plans</span></button>
-    <button class="reference-center-nav" onclick="switchPage('deposit')" id="nav-deposit" aria-label="Deposit"><div class="ico"><svg viewBox="0 0 24 24"><path d="M5 20V6.5A2.5 2.5 0 0 1 7.5 4H15v16M15 8h2.2A2.8 2.8 0 0 1 20 10.8V18a2 2 0 0 1-2 2h-3M8 9h4M8 13h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 17h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div></button>
+    <button class="reference-center-nav" onclick="switchPage('deposit')" id="nav-deposit" aria-label="Deposit"><div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H19a1 1 0 0 1 1 1v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-2h-5a3 3 0 0 1 0-6h5V9H6a2 2 0 0 0-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 11h-5a2 2 0 0 0 0 4h5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="15.5" cy="13" r=".7" fill="currentColor"/></svg></div></button>
     <button onclick="switchPage('wallet')" id="nav-wallet"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7.5h14.5A2.5 2.5 0 0 1 21 10v8.5A2.5 2.5 0 0 1 18.5 21H5a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 14h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></div><span>Wallet</span></button>
     <button onclick="switchPage('profile')" id="nav-profile"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 20c.7-3.5 3-5.2 6.5-5.2s5.8 1.7 6.5 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><span>More</span></button>
   </div>
 </div>
 
 <script>
+/* Firebase configuration and compatible Firestore data layer */
 const firebaseConfig={apiKey:"AIzaSyBqYWKUXYDo8y-X7kLCuzldF_UKVht04",authDomain:"adiimei-invest.firebaseapp.com",projectId:"adiimei-invest",storageBucket:"adiimei-invest.firebasestorage.app",messagingSenderId:"383621463567",appId:"1:383621463567:web:5993d2528bdb88b7ed7a"};
-firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
 let currentUser=null,unsub=null,currentPage='home',isProcessing=false,withdrawTimerInterval=null;
+
+function normalizeUserData(data,fallbackPhone=''){
+ const source=data&&typeof data==='object'?data:{};
+ const user={...source,phone:source.phone||fallbackPhone,fullName:typeof source.fullName==='string'?source.fullName:'Member'};
+ ['balance','frozenBalance','totalEarning','totalDeposit','totalWithdraw'].forEach(function(field){
+   const value=Number(user[field]||0);
+   user[field]=Number.isFinite(value)?value:0;
+ });
+ ['activeInvests','transactions','referrals','referralQualifiedPhones','referralClaimedPhones','referredByChain'].forEach(function(field){
+   if(!Array.isArray(user[field]))user[field]=[];
+ });
+ return user;
+}
 const PLANS=[
 {id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'',cls:'pso',logo:'',size:28},
 {id:2,name:'Shell Basic',company:'SHELL',kw:'2.5K Ltr',price:5000,daily:200,total:3000,icon:'',cls:'shell',logo:'',size:32},
@@ -878,6 +949,7 @@ function clearErrors(){document.querySelectorAll('.field-error').forEach(e=>{e.c
 function showFieldError(r,e,m){document.getElementById(r)?.classList.add('error');const er=document.getElementById(e);if(er){er.textContent=m;er.classList.add('show');}}
 function toggleEye(id,el){const i=document.getElementById(id);if(i.type==='password'){i.type='text';el.textContent='🙈';}else{i.type='password';el.textContent='👁️';}}
 function setLoading(b,l,txt){const btn=document.getElementById(b);const t=btn.querySelector('.btn-text');if(l){btn.classList.add('loading');btn.disabled=true;isProcessing=true;t.textContent='Please wait...';}else{btn.classList.remove('loading');btn.disabled=false;isProcessing=false;t.textContent=txt;}}
+/* Navigation and page lifecycle */
 function switchPage(t){
   try{localStorage.setItem('diamond_last_page', t);}catch(e){}
   currentPage=t;
@@ -1079,7 +1151,7 @@ async function doSignup(){
       });
     }catch(e){console.log('ref update error',e);}
   }
-  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=nu;
+  localStorage.setItem('diamond_current_glass_v22',phone);currentUser=normalizeUserData(nu,phone);
   if(referredByPhone){toast('Created • Referral linked • 3 qualifying referrals complete honay par RS 1,500 Income unlock hoga','ok');}
   else{toast('Created + Rs 100','ok');}
   setTimeout(()=>showApp(),800);
@@ -1173,36 +1245,53 @@ async function doLogin(){
  setLoading('loginBtn',true);showMsg('Verifying...','ok');
  try{const doc=await db.collection('users').doc(phone).get();if(!doc.exists){showMsg('Not found → Signup','err');toast('Not found','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
  const fb=doc.data();if(fb.password!==pass){showMsg('Wrong password','err');showFieldError('row-loginPass','err-loginPass','Wrong');toast('Wrong password','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
- localStorage.setItem('diamond_current_glass_v22',phone);currentUser=fb;toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
+ localStorage.setItem('diamond_current_glass_v22',phone);currentUser=normalizeUserData(fb,phone);toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
 let settleInFlight=false;
+function resetAppScroll(){
+ window.scrollTo({top:0,left:0,behavior:'instant'});
+ document.documentElement.scrollTop=0;
+ document.body.scrollTop=0;
+}
+
+function renderInitialHome(attempt){
+ if(!currentUser||currentPage!=='home')return;
+ let rendered=false;
+ try{
+   renderApp();
+   rendered=!!document.querySelector('#appContent .lux-home-v9');
+ }catch(error){
+   if(attempt===0)console.error('Initial dashboard render failed',error);
+ }
+ resetAppScroll();
+ if(!rendered&&attempt<8){
+   setTimeout(function(){renderInitialHome(attempt+1);},Math.min(100*(attempt+1),500));
+ }
+}
+
 function showApp(){
  if(!currentUser)return;
- document.getElementById('auth').style.display='none';
+ const auth=document.getElementById('auth');
  const app=document.getElementById('app');
  const content=document.getElementById('appContent');
- currentPage='home';
- try{localStorage.setItem('diamond_last_page','home');}catch(e){}
+ if(auth)auth.style.display='none';
+ if(!app)return;
  app.classList.add('active');
- document.getElementById('topName').textContent=currentUser.fullName||'Member';
- try{document.getElementById('topAvatar').textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();}catch(e){document.getElementById('topAvatar').textContent='M';}
- document.querySelectorAll('.bottom-nav button').forEach(function(b){b.classList.remove('active');});
- document.getElementById('nav-home')?.classList.add('active');
- if(content) content.innerHTML='<div class="home-first-render" aria-hidden="true"></div>';
- requestAnimationFrame(function(){
-   try{renderApp();}
-   catch(e){console.error('initial home render',e);}
-   requestAnimationFrame(function(){
-     try{renderApp();}catch(e){console.error('home render retry',e);}
-   });
- });
+ resetAppScroll();
+ const topName=document.getElementById('topName');
+ if(topName)topName.textContent=currentUser.fullName||'Member';
+ const avatar=document.getElementById('topAvatar');
+ if(avatar)avatar.textContent=((currentUser.fullName||'M').toString()[0]||'M').toUpperCase();
+ if(content)content.innerHTML='<div class="home-first-render" aria-hidden="true"></div>';
+ switchPage('home');
+ if(!document.querySelector('#appContent .lux-home-v9'))renderInitialHome(0);
  startListener();
- try{if(currentUser && currentUser.phone) listenWalletPending(currentUser.phone);}catch(e){}
+ try{if(currentUser.phone)listenWalletPending(currentUser.phone);}catch(error){console.error('Wallet listener startup failed',error);}
  setTimeout(function(){updateBellBadge();renderWalletPending();},180);
  if(!settleInFlight){
    settleInFlight=true;
-   settleMaturedOffers().then(function(){renderApp();}).catch(function(e){console.error('background settlement',e);}).finally(function(){settleInFlight=false;});
+   settleMaturedOffers().then(function(){renderApp();}).catch(function(error){console.error('Background settlement failed',error);}).finally(function(){settleInFlight=false;});
  }
 }
 
@@ -1242,16 +1331,19 @@ async function loadReferralTeam(){
   }catch(e){box.innerHTML='<div style="text-align:center;padding:18px;color:#f87171;font-size:11px">Team load failed. Please refresh.</div>';}
 }
 
+/* Screen renderer: keeps the existing Firestore document schema and workflows */
 function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
- const bal=currentUser.balance||0;const totalEarn=currentUser.totalEarning||0;const totalDep=currentUser.totalDeposit||0;const totalWd=currentUser.totalWithdraw||0;
- const todayIncome=(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((s,i)=>s+(i.daily||0),0);
- const totalProfit=totalEarn;const activeDays=(currentUser.activeInvests||[]).reduce((s,i)=>s+(i.daysCompleted||0),0);
- const activePlan=(currentUser.activeInvests||[]).find(i=>i.status==='active');
+ const asNumber=value=>{const number=Number(value);return Number.isFinite(number)?number:0;};
+ const investments=Array.isArray(currentUser.activeInvests)?currentUser.activeInvests:[];
+ const bal=asNumber(currentUser.balance);const totalEarn=asNumber(currentUser.totalEarning);const totalDep=asNumber(currentUser.totalDeposit);const totalWd=asNumber(currentUser.totalWithdraw);
+ const todayIncome=investments.filter(i=>i&&i.status==='active').reduce((sum,i)=>sum+asNumber(i.daily),0);
+ const totalProfit=totalEarn;const activeDays=investments.reduce((sum,i)=>sum+asNumber(i&&i.daysCompleted),0);
+ const activePlan=investments.find(i=>i&&i.status==='active');
  const kycStatus=currentUser.kycStatus||'not_submitted';
 
  if(currentPage==='home'){
-  const active=(currentUser.activeInvests||[]).filter(a=>a.status!=='principal_returned');
+  const active=investments.filter(a=>a.status!=='principal_returned');
   const userName=(currentUser.fullName||'Member').trim();
   const memberCode=currentUser.referralCode||currentUser.phone||'';
   c.innerHTML=`
@@ -1275,7 +1367,7 @@ function renderApp(){
    </div>
   `;
  }else if(currentPage==='plan'){
-  const active=(currentUser.activeInvests||[]).filter(a=>a.status!=='principal_returned');
+  const active=investments.filter(a=>a.status!=='principal_returned');
   const activeDaysTotal=active.reduce((sum,a)=>sum+Number(a.daysCompleted||0),0);
   const planCount=active.length;
   c.innerHTML=`
@@ -1292,7 +1384,7 @@ function renderApp(){
 }else if(currentPage==='wallet'){
   const frozen=Number(currentUser.frozenBalance||0);
   const remaining=Number(bal||0);
-  const activeLocked=(currentUser.activeInvests||[]).filter(i=>i.status==='active').reduce((sum,i)=>sum+Number(i.amount||0),0);
+  const activeLocked=investments.filter(i=>i.status==='active').reduce((sum,i)=>sum+Number(i.amount||0),0);
   const cooldown=getWithdrawCooldownRemaining();
   const cooldownText=cooldown>0?formatWithdrawCooldown(cooldown):'AVAILABLE';
   c.innerHTML=`
@@ -1331,7 +1423,7 @@ function renderApp(){
        <div class="mini-head"><span>🔒 FROZEN</span><span>ACTIVE OFFERS</span></div>
        <div class="mini-value">RS ${frozen.toFixed(2)}</div>
        <div class="mini-note">Active offer amount 15 days ke liye yahan locked rehta hai.</div>
-       <div class="wallet-balance-chip">${(currentUser.activeInvests||[]).filter(i=>i.status==='active').length} active offer(s)</div>
+       <div class="wallet-balance-chip">${investments.filter(i=>i.status==='active').length} active offer(s)</div>
       </div>
     </div>
 
@@ -1657,6 +1749,7 @@ function getClaimStatus(inv){
 }
 
 let depositScreenshotBase64=null;
+/* Deposit proof, wallet requests, and profile verification */
 function handleDepScreenshot(input){
   const file=input.files[0];
   if(!file) return;
@@ -1953,19 +2046,14 @@ async function submitKyc(){
  }catch(e){toast(e.message,'err');}
  return;
 }
-async function submitKycOLD_DUPLICATE(){
- const legalName=document.getElementById('kycLegalName')?.value.trim();const cnic=document.getElementById('kycCnic')?.value.trim();const dob=document.getElementById('kycDob')?.value;const father=document.getElementById('kycFather')?.value.trim();const addr=document.getElementById('kycAddr')?.value.trim();const agree=document.getElementById('kycAgree')?.checked;
- if(!legalName||legalName.length<3){toast('Full Legal Name as per CNIC required','err');return;}if(!cnic||cnic.length<13){toast('CNIC Number required 35201-1234567-1 format','err');return;}if(!dob){toast('DOB required','err');return;}if(!father||father.length<3){toast('Father Name required as per CNIC','err');return;}if(!addr||addr.length<10){toast('Complete Address as per CNIC required','err');return;}if(!agree){toast('Please confirm Full Legal Name and CNIC correct checkbox','err');return;}
- try{
-  const kycData={legalName:legalName,cnic:cnic,dob:dob,father:father,addr:addr,submittedAt:new Date().toISOString()};
-  await db.collection('users').doc(currentUser.phone).update({kycStatus:'pending',kycData:kycData,fullName:legalName});
-  currentUser.kycStatus='pending';currentUser.kycData=kycData;currentUser.fullName=legalName;
-  toast('KYC Submitted • Full Legal Name: '+legalName+' • CNIC: '+cnic+' • Pending 24h • Admin will approve','ok');renderApp();
- }catch(e){toast(e.message,'err');}
+function initializeApplication(){
+ applyReferralFromUrl();
+ loadCurrent();
 }
-document.addEventListener('DOMContentLoaded',applyReferralFromUrl);
-applyReferralFromUrl();
 
+document.addEventListener('DOMContentLoaded',initializeApplication,{once:true});
+
+/* Startup and live Firestore synchronization */
 async function loadCurrent(){
   const p=localStorage.getItem('diamond_current_glass_v22');
   if(!p) return;
@@ -1973,7 +2061,7 @@ async function loadCurrent(){
   try{
     const d=await db.collection('users').doc(p).get();
     if(d.exists){
-      currentUser=d.data();
+      currentUser=normalizeUserData(d.data(),p);
       showApp();
     }
   }catch(e){
@@ -1984,7 +2072,7 @@ function startListener(){
  if(!currentUser||unsub)return;
  unsub=db.collection('users').doc(currentUser.phone).onSnapshot(s=>{
    if(!s.exists)return;
-   var fb=s.data();
+   var fb=normalizeUserData(s.data(),currentUser.phone);
    if(JSON.stringify(fb)!==JSON.stringify(currentUser)){
      var oldTxs=currentUser.transactions||[];
      var newTxs=fb.transactions||[];
@@ -2003,57 +2091,7 @@ function startListener(){
  });
 }
 function logout(){localStorage.removeItem('diamond_current_glass_v22');if(unsub){unsub();unsub=null;}location.reload();}
-window.addEventListener('load',loadCurrent);
+
 </script>
 </body>
-</html><style>
-/* Plan cards: keep the reference artwork fully inside the card */
-.lux-plan-card-v9{
-  min-height:118px!important;
-  padding:9px 12px!important;
-  gap:10px!important;
-  overflow:hidden!important;
-  align-items:center!important;
-}
-.lux-plan-icon-v9{
-  width:94px!important;
-  min-width:94px!important;
-  height:100px!important;
-  flex:0 0 94px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  background:transparent!important;
-  border:0!important;
-  box-shadow:none!important;
-  overflow:visible!important;
-  position:relative!important;
-  z-index:2!important;
-}
-.lux-plan-icon-v9 .plan-logo-svg{
-  width:100px!important;
-  height:94px!important;
-  max-width:none!important;
-  max-height:none!important;
-  object-fit:contain!important;
-  display:block!important;
-  background:transparent!important;
-  filter:drop-shadow(0 7px 13px rgba(0,0,0,.35))!important;
-  transform:none!important;
-}
-.lux-plan-main-v9{min-width:0;flex:1 1 auto;overflow:hidden}
-.lux-plan-name-row-v9 h3{font-size:16px!important}
-.lux-plan-price-v9{font-size:11px!important;margin-top:4px!important;white-space:nowrap}
-.lux-plan-price-v9 b{font-size:14px!important}
-.lux-plan-meta-v9{margin-top:5px!important;font-size:10px!important;white-space:nowrap}
-.lux-plan-return-v9{margin-top:5px!important;font-size:10px!important;white-space:nowrap}
-.lux-plan-arrow-v9{flex:0 0 42px!important}
-@media(max-width:520px){
- .lux-plan-card-v9{min-height:112px!important;padding:7px 8px!important;gap:8px!important}
- .lux-plan-icon-v9{width:82px!important;min-width:82px!important;height:94px!important;flex-basis:82px!important}
- .lux-plan-icon-v9 .plan-logo-svg{width:88px!important;height:84px!important}
- .lux-plan-name-row-v9 h3{font-size:15px!important}
- .lux-plan-price-v9 b{font-size:13px!important}
- .lux-plan-arrow-v9{width:38px!important;height:38px!important;flex-basis:38px!important}
-}
-</style>
+</html>
