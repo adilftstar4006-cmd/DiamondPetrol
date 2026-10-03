@@ -555,11 +555,11 @@ transform:translateX(-70%) rotate(8deg);animation:uiShine 4.8s ease-in-out infin
       <div class="withdraw-modal-row"><span>Withdraw Amount</span><b class="highlight" id="wdModalAmount">RS 0</b></div>
       <div class="withdraw-modal-row"><span>Account Type</span><b id="wdModalMethod">Easypaisa</b></div>
       <div class="withdraw-modal-row"><span>Account</span><b id="wdModalAccount">••••</b></div>
-      <div class="withdraw-modal-row"><span>Remaining Income</span><b id="wdModalRemaining">RS 0</b></div>
+      <div class="withdraw-modal-row"><span>Remaining Balance</span><b id="wdModalRemaining">RS 0</b></div>
             <div class="withdraw-modal-row"><span>You Receive</span><b class="highlight" id="wdModalReceive">RS 0</b></div>
     </div>
     <div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:12px;text-align:center;line-height:1.5">
-      Once confirmed, this amount will be deducted from your Income Balance immediately and cannot be withdrawn again.
+      Once confirmed, this amount will be deducted from your Remaining Balance immediately and cannot be withdrawn again.
     </div>
     <div class="withdraw-modal-actions">
       <button class="withdraw-modal-btn cancel" onclick="closeWithdrawModal()">✕ Cancel</button>
@@ -904,7 +904,7 @@ let currentUser=null,unsub=null,currentPage='home',isProcessing=false,withdrawTi
 function normalizeUserData(data,fallbackPhone=''){
  const source=data&&typeof data==='object'?data:{};
  const user={...source,phone:source.phone||fallbackPhone,fullName:typeof source.fullName==='string'?source.fullName:'Member'};
- ['balance','frozenBalance','totalEarning','totalDeposit','totalWithdraw'].forEach(function(field){
+ ['balance','frozenBalance','totalDeposit','totalWithdraw'].forEach(function(field){
    const value=Number(user[field]||0);
    user[field]=Number.isFinite(value)?value:0;
  });
@@ -912,6 +912,28 @@ function normalizeUserData(data,fallbackPhone=''){
    if(!Array.isArray(user[field]))user[field]=[];
  });
  return user;
+}
+
+async function migrateLegacyIncomeToBalance(){
+  if(!currentUser||!db)return;
+  try{
+    const ref=db.collection('users').doc(currentUser.phone);
+    const snap=await ref.get();
+    if(!snap.exists)return;
+    const data=snap.data()||{};
+    const legacy=Number(data.totalEarning||0);
+    if(data.incomeBalanceMigrated===true)return;
+    if(legacy>0){
+      currentUser.balance=Number(currentUser.balance||0)+legacy;
+    }
+    currentUser.incomeBalanceMigrated=true;
+    currentUser.totalEarning=0;
+    await ref.update({
+      balance:Number(data.balance||0)+legacy,
+      totalEarning:firebase.firestore.FieldValue.delete(),
+      incomeBalanceMigrated:true
+    });
+  }catch(e){console.log('balance migration error',e);}
 }
 const PLANS=[
 {id:1,name:'PSO Starter',company:'PSO',kw:'1.5K Ltr',price:3000,daily:120,total:1800,icon:'',cls:'pso',logo:'',size:28},
@@ -979,8 +1001,8 @@ function notificationMeta(t){
   if(type==='withdraw'&&status==='approved') return {title:'Withdrawal approved',desc:'Your withdrawal request has been approved and is being processed.',icon:'↑',tone:'green',group:'transactions'};
   if(type==='withdraw'&&status==='pending') return {title:'Withdrawal submitted',desc:'Your withdrawal request has been received and is awaiting review.',icon:'◷',tone:'gold',group:'transactions'};
   if(type==='withdraw'&&status==='rejected') return {title:'Withdrawal update',desc:'Your withdrawal request was not approved. The reserved amount has been returned.',icon:'!',tone:'red',group:'transactions'};
-  if(type==='profit'||type==='daily') return {title:'Daily income received',desc:'Your daily income has been credited to your Income Balance.',icon:'↗',tone:'green',group:'updates'};
-  if(type==='referral_reward') return {title:'Referral reward received',desc:'Your referral reward has been credited to your Income Balance.',icon:'★',tone:'gold',group:'updates'};
+  if(type==='profit'||type==='daily') return {title:'Daily claim received',desc:'Your daily plan claim has been added to your Remaining Balance.',icon:'↗',tone:'green',group:'updates'};
+  if(type==='referral_reward') return {title:'Referral reward received',desc:'Your referral reward has been credited to your Remaining Balance.',icon:'★',tone:'gold',group:'updates'};
   if(type==='bonus') return {title:'Bonus credited',desc:'A bonus has been credited to your account.',icon:'★',tone:'gold',group:'updates'};
   return {title:'Account update',desc:t&&t.desc?t.desc:'Your account activity has been updated.',icon:'•',tone:'blue',group:'system'};
 }
@@ -1126,7 +1148,7 @@ async function doSignup(){
     referredBy:ref||'',
     referredByPhone:referredByPhone||'',
     referredByChain:referredByChain||[],
-    balance:100,totalDeposit:0,totalEarning:0,totalWithdraw:0,frozenBalance:0,
+    balance:100,totalDeposit:0,totalWithdraw:0,frozenBalance:0,
     referralsCount:0,referralEarnings:0,
     kycStatus:'not_submitted',kycData:null,activeInvests:[],withdrawHistory:[],
     transactions:[{type:'bonus',amount:100,desc:'Welcome bonus',date:new Date().toISOString(),status:'approved'}],
@@ -1152,7 +1174,7 @@ async function doSignup(){
     }catch(e){console.log('ref update error',e);}
   }
   localStorage.setItem('diamond_current_glass_v22',phone);currentUser=normalizeUserData(nu,phone);
-  if(referredByPhone){toast('Created • Referral linked • 3 qualifying referrals complete honay par RS 1,500 Income unlock hoga','ok');}
+  if(referredByPhone){toast('Created • Referral linked • 3 qualifying referrals complete honay par RS 1,500 Remaining Balance reward unlock hoga','ok');}
   else{toast('Created + Rs 100','ok');}
   setTimeout(()=>showApp(),800);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('signupBtn',false,'CREATE ACCOUNT + Rs 500');}
@@ -1211,19 +1233,17 @@ async function claimReferralGroup(){
       const reward=1500;
       const tx={
         type:'referral_reward',amount:reward,
-        desc:'Referral Group Reward: 3 confirmed referrals completed → RS 1,500 Income',
+        desc:'Referral Group Reward: 3 confirmed referrals completed → RS 1,500 Remaining Balance',
         date:nowIso,status:'approved',referralPhones:batch
       };
       transaction.update(userRef,{
-        totalEarning:Number(latest.totalEarning||0)+reward,
-        referralEarnings:Number(latest.referralEarnings||0)+reward,
+        balance:Number(latest.balance||0)+reward,
         referralClaimedPhones:firebase.firestore.FieldValue.arrayUnion(...batch),
         referralClaimedGroups:firebase.firestore.FieldValue.increment(1),
         transactions:firebase.firestore.FieldValue.arrayUnion(tx)
       });
       claimData={
-        totalEarning:Number(latest.totalEarning||0)+reward,
-        referralEarnings:Number(latest.referralEarnings||0)+reward,
+        balance:Number(latest.balance||0)+reward,
         referralClaimedPhones:[...claimed,...batch],
         referralClaimedGroups:Number(latest.referralClaimedGroups||0)+1,
         transactions:[...(latest.transactions||[]),tx]
@@ -1231,7 +1251,7 @@ async function claimReferralGroup(){
     });
     if(claimData){
       Object.assign(currentUser,claimData);
-      toast('🎉 RS 1,500 Referral Group Reward Income mein add ho gaya!','ok');
+      toast('🎉 RS 1,500 Referral Group Reward Remaining Balance mein add ho gaya!','ok');
       renderApp();
     }
   }catch(e){toast(e.message||'Referral reward claim failed','err');}
@@ -1245,7 +1265,7 @@ async function doLogin(){
  setLoading('loginBtn',true);showMsg('Verifying...','ok');
  try{const doc=await db.collection('users').doc(phone).get();if(!doc.exists){showMsg('Not found → Signup','err');toast('Not found','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
  const fb=doc.data();if(fb.password!==pass){showMsg('Wrong password','err');showFieldError('row-loginPass','err-loginPass','Wrong');toast('Wrong password','err');setLoading('loginBtn',false,'LOGIN SECURELY');return;}
- localStorage.setItem('diamond_current_glass_v22',phone);currentUser=normalizeUserData(fb,phone);toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
+ localStorage.setItem('diamond_current_glass_v22',phone);currentUser=normalizeUserData(fb,phone);await migrateLegacyIncomeToBalance();toast('Welcome '+fb.fullName+'!','ok');setTimeout(()=>showApp(),600);
  }catch(e){showMsg(e.message,'err');toast(e.message,'err');setLoading('loginBtn',false,'LOGIN SECURELY');}
 }
 let settleInFlight=false;
@@ -1336,9 +1356,8 @@ function renderApp(){
  const c=document.getElementById('appContent');if(!currentUser)return;
  const asNumber=value=>{const number=Number(value);return Number.isFinite(number)?number:0;};
  const investments=Array.isArray(currentUser.activeInvests)?currentUser.activeInvests:[];
- const bal=asNumber(currentUser.balance);const totalEarn=asNumber(currentUser.totalEarning);const totalDep=asNumber(currentUser.totalDeposit);const totalWd=asNumber(currentUser.totalWithdraw);
- const todayIncome=investments.filter(i=>i&&i.status==='active').reduce((sum,i)=>sum+asNumber(i.daily),0);
- const totalProfit=totalEarn;const activeDays=investments.reduce((sum,i)=>sum+asNumber(i&&i.daysCompleted),0);
+ const bal=asNumber(currentUser.balance);const totalDep=asNumber(currentUser.totalDeposit);const totalWd=asNumber(currentUser.totalWithdraw);
+ const todayIncome=investments.filter(i=>i&&i.status==='active').reduce((sum,i)=>sum+asNumber(i.daily),0);const activeDays=investments.reduce((sum,i)=>sum+asNumber(i&&i.daysCompleted),0);
  const activePlan=investments.find(i=>i&&i.status==='active');
  const kycStatus=currentUser.kycStatus||'not_submitted';
 
@@ -1354,9 +1373,9 @@ function renderApp(){
 
     <section class="lux-balance-v9"><div class="lux-balance-left"><div class="lux-wallet-icon-v9"><svg viewBox="0 0 24 24"><path d="M4 7.5h14.5A2.5 2.5 0 0 1 21 10v8.5A2.5 2.5 0 0 1 18.5 21H5a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h12" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 14h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></div><div><span>Total Balance</span><strong><small>RS</small>${bal.toFixed(2)}</strong></div></div><div class="lux-balance-actions-v9"><button onclick="switchPage('deposit')"><span>+</span><b>Deposit</b></button><button onclick="switchPage('withdraw')"><span>↗</span><b>Withdraw</b></button></div></section>
 
-    <section class="lux-stat-grid-v9"><div class="lux-stat-v9 income"><div class="lux-stat-icon-v9"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l3 3 7-8M15 7h4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><span>Total Income</span><b>RS ${totalEarn.toFixed(2)}</b></div></div><div class="lux-stat-v9 plans"><div class="lux-stat-icon-v9"><svg viewBox="0 0 24 24"><path d="m12 3 7 4-7 4-7-4 7-4Zm-7 9 7 4 7-4M5 17l7 4 7-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div><div><span>Active Plans</span><b>${active.length} ${active.length===1?'Plan':'Plans'}</b></div></div></section>
+    <section class="lux-stat-grid-v9"><div class="lux-stat-v9 income"><div class="lux-stat-icon-v9"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l3 3 7-8M15 7h4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><span>Remaining Balance</span><b>RS ${bal.toFixed(2)}</b></div></div><div class="lux-stat-v9 plans"><div class="lux-stat-icon-v9"><svg viewBox="0 0 24 24"><path d="m12 3 7 4-7 4-7-4 7-4Zm-7 9 7 4 7-4M5 17l7 4 7-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div><div><span>Active Plans</span><b>${active.length} ${active.length===1?'Plan':'Plans'}</b></div></div></section>
 
-    <section class="lux-quick-grid-v9"><button onclick="switchPage('plan')"><div class="quick-lux-icon gold"><svg viewBox="0 0 24 24"><path d="m12 3 8 4-8 4-8-4 8-4Zm-8 9 8 4 8-4M4 17l8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><span>My Plans</span></button><button onclick="switchPage('history')"><div class="quick-lux-icon blue"><svg viewBox="0 0 24 24"><path d="M6 5h14M6 12h14M6 19h14M3 5h.01M3 12h.01M3 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><span>Transactions</span></button><button onclick="switchPage('wallet')"><div class="quick-lux-icon amber"><svg viewBox="0 0 24 24"><path d="M12 3v18M17 7.5C16.3 6.5 14.8 6 13 6h-2.2C8.7 6 7 7.2 7 9s1.7 3 3.8 3h2.4c2.1 0 3.8 1.3 3.8 3s-1.7 3-3.8 3H11c-1.8 0-3.3-.5-4-1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div><span>Daily Income</span></button><button onclick="switchPage('team')"><div class="quick-lux-icon purple"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="10" r="2.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.6-3.3 2.4-5 5.5-5s4.9 1.7 5.5 5M14 16c2.7-.2 4.8 1.2 5.3 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div><span>Invite & Earn</span></button></section>
+    <section class="lux-quick-grid-v9"><button onclick="switchPage('plan')"><div class="quick-lux-icon gold"><svg viewBox="0 0 24 24"><path d="m12 3 8 4-8 4-8-4 8-4Zm-8 9 8 4 8-4M4 17l8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><span>My Plans</span></button><button onclick="switchPage('history')"><div class="quick-lux-icon blue"><svg viewBox="0 0 24 24"><path d="M6 5h14M6 12h14M6 19h14M3 5h.01M3 12h.01M3 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div><span>Transactions</span></button><button onclick="switchPage('wallet')"><div class="quick-lux-icon amber"><svg viewBox="0 0 24 24"><path d="M12 3v18M17 7.5C16.3 6.5 14.8 6 13 6h-2.2C8.7 6 7 7.2 7 9s1.7 3 3.8 3h2.4c2.1 0 3.8 1.3 3.8 3s-1.7 3-3.8 3H11c-1.8 0-3.3-.5-4-1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div><span>Daily Claims</span></button><button onclick="switchPage('team')"><div class="quick-lux-icon purple"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="10" r="2.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20c.6-3.3 2.4-5 5.5-5s4.9 1.7 5.5 5M14 16c2.7-.2 4.8 1.2 5.3 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div><span>Invite & Earn</span></button></section>
 
     <div class="lux-section-title-v9"><div><h2>Investment Plans</h2></div><button onclick="switchPage('plan')">View All <span>→</span></button></div>
     <div class="lux-plan-list-v9">${PLANS.map(p=>`<article class="lux-plan-card-v9 ${p.popular?'featured':''}"><div class="lux-plan-icon-v9 ${p.cls}">${planLogo(p)}</div><div class="lux-plan-main-v9"><div class="lux-plan-name-row-v9"><h3>${p.name}</h3>${p.popular?'<span>POPULAR</span>':''}</div><div class="lux-plan-price-v9">Investment <b>RS ${p.price.toLocaleString()}</b></div><div class="lux-plan-meta-v9"><span>Daily <b>${((p.daily/p.price)*100).toFixed(1).replace(/\.0$/, '')}%</b></span><i></i><span>15 Days</span></div><div class="lux-plan-return-v9">Total Return: <b>RS ${p.total.toLocaleString()}</b></div></div><button class="lux-plan-arrow-v9" onclick="event.stopPropagation();investPlan(${p.price},${JSON.stringify(p.name)},${p.daily})">→</button></article>`).join('')}</div>
@@ -1398,12 +1417,12 @@ function renderApp(){
     </div>
 
     <div class="wallet-hero">
-      <div class="wallet-kicker">INCOME BALANCE • WITHDRAWABLE</div>
+      <div class="wallet-kicker">REMAINING BALANCE • WITHDRAWABLE</div>
       <div class="wallet-main-row">
        <div>
-        <div class="wallet-income-value">RS ${totalEarn.toFixed(2)}</div>
+        <div class="wallet-income-value">RS ${remaining.toFixed(2)}</div>
         <div class="wallet-income-label">Available for withdrawal</div>
-        <div class="wallet-balance-chip">50% max per withdrawal</div>
+        <div class="wallet-balance-chip">No percentage limit</div>
        </div>
        <div class="wallet-cooldown">
         <small>NEXT WITHDRAWAL</small>
@@ -1451,7 +1470,7 @@ function renderApp(){
       <div class="wallet-section-head"><div><div class="wallet-section-title">How your wallet works</div><div class="wallet-section-sub">Simple balance flow</div></div></div>
       <div class="wallet-rule"><span class="rule-icon">💳</span><div><b style="color:#818cf8">Remaining Balance</b><br>Approved deposit yahan aata hai aur offers activate karne ke liye use hota hai.</div></div>
       <div class="wallet-rule"><span class="rule-icon">🔒</span><div><b style="color:#22d3ee">Frozen Balance</b><br>Active offer ka principal 15 days tak locked rehta hai.</div></div>
-      <div class="wallet-rule"><span class="rule-icon">💰</span><div><b style="color:#4ade80">Income Balance</b><br>Claimed income yahan aati hai. Withdrawal isi balance se hoti hai.</div></div>
+      <div class="wallet-rule"><span class="rule-icon">💰</span><div><b style="color:#4ade80">Daily Claims</b><br>Plan ka daily claim seedha Remaining Balance mein add hota hai.</div></div>
       <div class="wallet-rule"><span class="rule-icon">↻</span><div><b style="color:#fbbf24">After 15 Days</b><br>Offer complete hone par principal Remaining Balance mein return hota hai.</div></div>
     </div>
    </div>
@@ -1497,19 +1516,19 @@ function renderApp(){
    ${!canWithdraw?`<div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:700;color:#fca5a5;font-size:13px">🔒 KYC Required for Withdraw</div><div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">Withdraw KYC ke bagair nahi hoga. Profile > KYC me CNIC, Full Legal Name submit karen. Admin 24h me approve karega. Jab tak KYC approved nahi, withdraw blocked hai.</div><button onclick="switchPage('profile')" style="margin-top:8px;padding:8px 14px;border-radius:8px;background:#f59e0b;color:#000;border:none;font-weight:700;font-size:11px">Go to KYC • Submit CNIC</button></div>`:''}
    <div class="solar-card" style="${!canWithdraw?'opacity:.6;pointer-events:none':''}">
     <div style="font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px">↑ Withdraw Funds • KYC ${canWithdraw?'Approved ✅':'Required 🔒'}</div>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ After one withdrawal, the next withdrawal is available after <b style="color:#fff">12 hours</b>.</div><div>✅ Maximum withdrawal per request is <b style="color:#fff">50% of Income Balance</b>.</div><div>✅ Min 500 RS • Max 50% of Income Balance • KYC approved required.</div></div></div>
-    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;gap:10px;align-items:center"><div style="width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div style="flex:1"><div style="font-size:12px;font-weight:800">Next Withdrawal Cooldown</div><div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px">Har withdrawal ke baad 12 hours wait • Maximum 50% per request</div></div><b id="withdrawCooldownTimer" style="font-size:16px;color:#fbbf24;letter-spacing:1px">${getWithdrawCooldownRemaining()>0?formatWithdrawCooldown(getWithdrawCooldownRemaining()):'AVAILABLE'}</b></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💰 Income Balance (Withdrawable)</span><b style="color:#fff">RS ${totalEarn.toFixed(2)}</b></div>
-    <div style="font-size:10px;color:rgba(255,255,255,.42);margin-bottom:12px">Withdrawal submit hone par sirf withdrawn amount Income se cut hota hai. Approval par Income dobara add nahi hoti; rejection par sirf wahi amount refund hota hai.</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8"><div>✅ After one withdrawal, the next withdrawal is available after <b style="color:#fff">12 hours</b>.</div><div>✅ Withdrawal Remaining Balance se hoti hai.</div><div>✅ Min 500 RS • Remaining Balance se withdrawal • KYC approved required.</div></div></div>
+    <div style="background:#0d1023;border-left:3px solid #f59e0b;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;gap:10px;align-items:center"><div style="width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,.15);display:grid;place-items:center">🕒</div><div style="flex:1"><div style="font-size:12px;font-weight:800">Next Withdrawal Cooldown</div><div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px">Har withdrawal ke baad 12 hours wait • Maximum 50% of Remaining Balance per request</div></div><b id="withdrawCooldownTimer" style="font-size:16px;color:#fbbf24;letter-spacing:1px">${getWithdrawCooldownRemaining()>0?formatWithdrawCooldown(getWithdrawCooldownRemaining()):'AVAILABLE'}</b></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px"><span>💼 Remaining Balance (Withdrawable)</span><b style="color:#fff">RS ${remaining.toFixed(2)}</b></div>
+    <div style="font-size:10px;color:rgba(255,255,255,.42);margin-bottom:12px">Withdrawal submit hone par withdrawn amount Remaining Balance se reserve hota hai. Maximum withdrawal 50% of Remaining Balance hai. Rejection par wahi amount Remaining Balance mein refund hota hai.</div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px;border-bottom:1px dashed rgba(255,255,255,.1);padding-bottom:10px"><span>You'll Receive</span><b style="color:#f59e0b" id="wdReceive">RS 0.00</b></div>
     <div style="font-size:12px;margin-bottom:6px;display:flex;gap:6px"><span style="color:#f59e0b">Rs</span> Amount (RS)</div>
-    <input id="wdAmount" type="number" placeholder="Min 500 • Max 50% Income" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
+    <input id="wdAmount" type="number" placeholder="Min 500 • Max 50% Remaining Balance" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <div style="font-size:12px;margin-bottom:6px">💳 Account Type</div>
     <select id="wdMethod" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}><option>Easypaisa</option><option>JazzCash</option><option>Bank</option></select>
     <div style="font-size:12px;margin-bottom:6px">📞 Account Number / IBAN (Must match KYC CNIC name)</div>
     <input id="wdAccount" type="tel" placeholder="Enter account number" class="input-dark" style="margin-bottom:12px" ${!canWithdraw?'disabled':''}>
     <button onclick="submitWithdraw()" class="solar-btn-orange" ${!canWithdraw?'disabled style="opacity:.5;cursor:not-allowed"':''}>✈️ Submit Withdraw ${!canWithdraw?'• KYC Required':''}</button>
-    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 500 RS • Max 50% of Income Balance • 12h between withdrawals • No fee • KYC approved required • Account must match CNIC name</div>
+    <div style="background:#0d1023;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:10px;display:flex;gap:6px;font-size:11px;color:rgba(255,255,255,.5)"><span>ℹ️</span> Min 500 RS • Remaining Balance se withdrawal • Max 50% Remaining Balance • 12h between withdrawals • No fee • KYC approved required • Account must match CNIC name</div>
    </div>
    <button onclick="switchPage('wallet')" style="width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px">← Back to Wallet</button>
   `;
@@ -1535,7 +1554,7 @@ function renderApp(){
  }else if(currentPage==='team'){
   c.innerHTML=`
    <div style="display:flex;align-items:center;gap:8px;font-size:20px;font-weight:800;margin-bottom:12px">👥 Diamond Petrol Referral Team</div>
-   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Group referral system • 3 confirmed referrals = RS 1,500 Income</div>
+   <div style="display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.12);font-size:11px;color:#fbbf24;margin-bottom:12px">ℹ️ Group referral system • 3 confirmed referrals = RS 1,500 Remaining Balance</div>
    <div class="solar-card">
     <div style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:8px">🎁 Your Diamond Petrol Referral Link</div>
     <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:10px">Apna link share karein. Link se signup karne wale user ka referral code automatically attach ho jayega.</div>
@@ -1543,7 +1562,7 @@ function renderApp(){
     <button onclick="navigator.clipboard.writeText('https://adiimei.online/?ref=${currentUser.referralCode}');toast('Link copied','ok')" style="width:100%;padding:12px;border-radius:12px;background:transparent;border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">🔗 Share Your Referral Link</button>
     <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Total Referrals</span><b style="color:#f59e0b">${currentUser.referralsCount||0}</b></div>
     <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px"><span style="color:rgba(255,255,255,.5)">Referral Group Income Earned</span><b style="color:#34d399">RS ${(currentUser.referralEarnings||0).toFixed(2)}</b></div>
-    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);font-size:11px;color:rgba(255,255,255,.7)">🎁 Har <b style="color:#fff">3 direct referrals</b> jab approved deposit <b style="color:#fff">RS 3,000+</b> complete karein, aap <b style="color:#22c55e">RS 1,500 Income</b> claim kar sakte hain.</div>
+    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);font-size:11px;color:rgba(255,255,255,.7)">🎁 Har <b style="color:#fff">3 direct referrals</b> jab approved deposit <b style="color:#fff">RS 3,000+</b> complete karein, aap <b style="color:#22c55e">RS 1,500 Remaining Balance</b> claim kar sakte hain.</div>
    </div>
 
    <div class="solar-card" style="border:1px solid rgba(245,158,11,.25);background:linear-gradient(135deg,#1a1e3a,#1e2a1a);margin-top:12px">
@@ -1557,7 +1576,7 @@ function renderApp(){
       <div>1️⃣ Banda aapke referral link se signup kare.</div>
       <div>2️⃣ Uska <b style="color:#fff">approved deposit RS 3,000 ya us se zyada</b> ho.</div>
       <div>3️⃣ Aisay <b style="color:#fff">3 referrals</b> complete hon to counter 3/3 ho jayega.</div>
-      <div>4️⃣ <b style="color:#22c55e">3/3 complete</b> honay par <b style="color:#22c55e">RS 1,500 Income</b> claim karein.</div>
+      <div>4️⃣ <b style="color:#22c55e">3/3 complete</b> honay par <b style="color:#22c55e">RS 1,500 Remaining Balance</b> claim karein.</div>
       <div>5️⃣ Claim ke baad aglay 3 referrals ka counter dobara start hoga.</div>
     </div>
    </div>
@@ -1572,7 +1591,7 @@ function renderApp(){
       <div class="profile-topline-v8"><button class="profile-round-btn" onclick="switchPage('home')">←</button><div><div class="profile-page-title">My Profile</div></div><button class="profile-round-btn" onclick="toast('Profile details are managed securely','ok')">✎</button></div>
       <div class="profile-avatar-wrap-v8"><div class="profile-avatar-v8">${initials}</div><div class="profile-avatar-ring"></div><span class="profile-camera-v8">+</span></div>
       <div class="profile-name-v8">${profileName}</div><div class="profile-member-v8"><span>${kycLabel}</span> Member ID: ${currentUser.referralCode||currentUser.phone}</div>
-      <div class="profile-summary-v8"><div><span>Balance</span><b>RS ${bal.toFixed(2)}</b></div><div><span>Income</span><b>RS ${totalEarn.toFixed(2)}</b></div><div><span>Team</span><b>${currentUser.referralsCount||0}</b></div></div>
+      <div class="profile-summary-v8"><div><span>Balance</span><b>RS ${bal.toFixed(2)}</b></div><div><span>Remaining</span><b>RS ${bal.toFixed(2)}</b></div><div><span>Team</span><b>${currentUser.referralsCount||0}</b></div></div>
     </section>
 
     <section class="profile-info-card-v8">
@@ -1683,16 +1702,16 @@ async function claimOne(id){
   }
   isProcessing=true;
   try{
-    const p=Number(inv.daily||0),ne=Number(currentUser.totalEarning||0)+p;
+    const p=Number(inv.daily||0),ne=Number(currentUser.balance||0)+p;
     const na=currentUser.activeInvests.map(function(i){return i.id===id?{...i,totalClaimed:Number(i.totalClaimed||0)+p,daysCompleted:Number(i.daysCompleted||0)+1,lastClaimDate:Date.now()}:i;});
-    const tx={type:'profit',amount:p,desc:'Daily profit '+inv.planName+' ('+(inv.company||'PSO')+') - Day '+(Number(inv.daysCompleted||0)+1)+'/15',date:new Date().toISOString(),status:'approved'};
+    const tx={type:'profit',amount:p,desc:'Daily claim '+inv.planName+' ('+(inv.company||'PSO')+') - Day '+(Number(inv.daysCompleted||0)+1)+'/15 - Added to Remaining Balance',date:new Date().toISOString(),status:'approved'};
     await db.collection('users').doc(currentUser.phone).update({
-      totalEarning:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)
+      balance:ne,activeInvests:na,transactions:firebase.firestore.FieldValue.arrayUnion(tx)
     });
-    currentUser.totalEarning=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
+    currentUser.balance=ne;currentUser.activeInvests=na;currentUser.transactions=[...(currentUser.transactions||[]),tx];
     distributeProfitBonus(p,currentUser.phone,currentUser.fullName,inv.planName);
     renderApp();
-    toast('✅ RS '+p+' Income me claim hua • Remaining Balance me add nahi hua','ok');
+    toast('✅ RS '+p+' Remaining Balance mein claim hua','ok');
   }catch(e){toast(e.message,'err');}
   finally{isProcessing=false;}
 }
@@ -1845,7 +1864,7 @@ function showWithdrawModal(amount,method,account){
   document.getElementById('wdModalAmount').textContent='RS '+amount.toLocaleString();
   document.getElementById('wdModalMethod').textContent=method||'Account';
   document.getElementById('wdModalAccount').textContent=account;
-  document.getElementById('wdModalRemaining').textContent='RS '+Math.max(0,(currentUser.totalEarning||0)-amount).toFixed(2);
+  document.getElementById('wdModalRemaining').textContent='RS '+Math.max(0,(currentUser.balance||0)-amount).toFixed(2);
   document.getElementById('wdModalReceive').textContent='RS '+amount.toLocaleString();
   modal.classList.add('show');
 }
@@ -1903,11 +1922,11 @@ async function submitWithdraw(){
    const hrs=Math.floor(cooldown/3600000),mins=Math.floor((cooldown%3600000)/60000);
    toast('⏳ Next withdrawal '+hrs+'h '+mins+'m baad available hoga','err');return;
  }
- var incomeBalance=Number(currentUser.totalEarning||0);
- const maxWithdraw=Math.floor(incomeBalance/2);
- if(maxWithdraw<500){toast('Income Balance RS '+incomeBalance.toFixed(2)+' hai. Withdrawal ke liye kam az kam RS 1,000 Income chahiye.','err');return;}
+ var remainingBalance=Number(currentUser.balance||0);
+ var maxWithdraw=remainingBalance*0.5;
+ if(remainingBalance<500){toast('Remaining Balance RS '+remainingBalance.toFixed(2)+' hai. Withdrawal ke liye kam az kam RS 500 chahiye.','err');return;}
  if(amount>maxWithdraw){
-   toast('❌ Ek withdrawal me maximum 50% = RS '+maxWithdraw.toLocaleString()+' allowed hai','err');
+   toast('❌ Maximum withdrawal RS '+maxWithdraw.toLocaleString()+' hai (50% of Remaining Balance)','err');
    return;
  }
  if(!acc||acc.length<8){toast('Account required','err');return;}
@@ -1939,7 +1958,6 @@ async function confirmWithdraw(){
      if(!snap.exists) throw new Error('User account not found');
 
      const latest=snap.data();
-     const latestIncome=Number(latest.totalEarning||0);
      const latestBalance=Number(latest.balance||0);
 
      if((latest.kycStatus||'not_submitted')!=='approved'){
@@ -1955,9 +1973,9 @@ async function confirmWithdraw(){
        const lastWithdrawAt=latestWithdraws.length?Math.max.apply(null,latestWithdraws.map(function(t){return new Date(t.date).getTime()||0;})):0;
        if(lastWithdrawAt && (Date.now()-lastWithdrawAt)<12*60*60*1000) throw new Error('Next withdrawal 12 hours after previous withdrawal is required');
      }
-     const maxLatest=Math.floor(latestIncome/2);
-     if(maxLatest<500) throw new Error('Income Balance must be at least RS 1,000 for a withdrawal');
-     if(amount>maxLatest) throw new Error('Maximum withdrawal is 50% of Income Balance = RS '+maxLatest.toLocaleString());
+      if(latestBalance<500) throw new Error('Remaining Balance must be at least RS 500 for a withdrawal');
+      const latestMaxWithdraw=latestBalance*0.5;
+      if(amount>latestMaxWithdraw) throw new Error('Maximum withdrawal is RS '+latestMaxWithdraw.toLocaleString()+' (50% of Remaining Balance)');
 
      const tx={
        type:'withdraw',
@@ -1970,7 +1988,7 @@ async function confirmWithdraw(){
        fee:0,
        receive:amount,
        withdrawId:withdrawId,
-       incomeReserved:true
+       balanceReserved:true
      };
 
      withdrawalData={
@@ -1988,8 +2006,7 @@ async function confirmWithdraw(){
      };
 
      transaction.update(userRef,{
-       balance:latestBalance,
-       totalEarning:latestIncome-amount,
+       balance:latestBalance-amount,
        totalWithdraw:Number(latest.totalWithdraw||0)+amount,
        withdrawCooldownUntil:Date.now()+(12*60*60*1000),
        withdrawCooldownManual:false,
@@ -2007,7 +2024,7 @@ async function confirmWithdraw(){
    if(withdrawalData && userReserved){
      try{
        await db.collection('users').doc(currentUser.phone).update({
-         totalEarning:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
+         balance:firebase.firestore.FieldValue.increment(Number(withdrawalData.amount)||0),
          totalWithdraw:firebase.firestore.FieldValue.increment(-(Number(withdrawalData.amount)||0)),
          withdrawCooldownUntil:0,
          withdrawCooldownManual:true,
@@ -2022,7 +2039,7 @@ async function confirmWithdraw(){
            fee:0,
            receive:amount,
            withdrawId:withdrawId,
-           incomeReserved:true
+           balanceReserved:true
          })
        });
      }catch(rollbackErr){
@@ -2062,6 +2079,7 @@ async function loadCurrent(){
     const d=await db.collection('users').doc(p).get();
     if(d.exists){
       currentUser=normalizeUserData(d.data(),p);
+      await migrateLegacyIncomeToBalance();
       showApp();
     }
   }catch(e){
