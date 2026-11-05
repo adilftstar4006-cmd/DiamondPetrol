@@ -1989,6 +1989,42 @@ async function submitKyc(){
  }catch(e){toast(e.message,'err');}
  return;
 }
+// Restored authentication UI helpers removed during the Cloud Miner rebrand.
+function applyReferralFromUrl(){
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const referral = (params.get('ref') || params.get('referral') || '').trim().toUpperCase();
+    const input = document.getElementById('signupRef');
+    if (referral && input) { input.value = referral; input.dataset.autoReferral = '1'; }
+  } catch (error) { console.warn('Referral URL could not be read:', error); }
+}
+
+function clearErrors(){
+  document.querySelectorAll('.field-error').forEach(function(el){
+    el.classList.remove('show');
+    el.textContent = '';
+  });
+  document.querySelectorAll('.field-row').forEach(function(el){
+    el.classList.remove('error');
+  });
+}
+// Keep both names because the login and signup handlers in this file use different aliases.
+function cleanErrors(){ clearErrors(); }
+
+function switchTab(tab){
+  const showLogin = tab === 'login';
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  if (loginForm) loginForm.classList.toggle('active', showLogin);
+  if (signupForm) signupForm.classList.toggle('active', !showLogin);
+  const title = document.getElementById('authTitle');
+  const subtitle = document.getElementById('authSubtitle');
+  if (title) title.textContent = showLogin ? 'Welcome back' : 'Create your account';
+  if (subtitle) subtitle.textContent = showLogin ? 'Sign in to continue to your account' : 'Register to get started';
+  if (typeof showMsg === 'function') showMsg('', '');
+  clearErrors();
+}
+
 function initializeApplication(){
  applyReferralFromUrl();
  loadCurrent();
